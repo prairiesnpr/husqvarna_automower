@@ -1,31 +1,29 @@
 """Platform for Husqvarna Automower camera integration."""
 
-import logging
 import io
+import logging
 import math
-import numpy as np
-
-from PIL import Image, ImageDraw
 from typing import Optional
 
+from PIL import Image, ImageDraw
+import numpy as np
+
+from homeassistant.components.camera import CameraEntityFeature, Camera
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.components.camera import Camera, CameraEntityFeature
-
-from .entity import AutomowerEntity
-from .vacuum import HusqvarnaAutomowerStateMixin
 
 from .const import (
     DOMAIN,
     ENABLE_CAMERA,
-    GPS_TOP_LEFT,
     GPS_BOTTOM_RIGHT,
-    MOWER_IMG_PATH,
+    GPS_TOP_LEFT,
     MAP_IMG_PATH,
+    MOWER_IMG_PATH,
     HOME_LOCATION,
 )
-
+from .entity import AutomowerEntity
+from .vacuum import HusqvarnaAutomowerStateMixin
 
 GpsPoint = tuple[float, float]
 ImgPoint = tuple[int, int]
@@ -46,6 +44,7 @@ async def async_setup_entry(
 
 
 class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
+    """Define an Automower Camera entity"""
 
     _attr_entity_registry_enabled_default = False
     _attr_frame_interval: float = 300

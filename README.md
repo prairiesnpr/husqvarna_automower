@@ -1,8 +1,11 @@
 # Home Assistant integration for Husqvarna Automower
 
-![Maintenance](https://img.shields.io/maintenance/yes/2022.svg)
-[![buy me a coffee](https://img.shields.io/badge/If%20you%20like%20it-Buy%20me%20a%20coffee-orange.svg)](https://www.buymeacoffee.com/Thomas55555)
-[![downloads](https://img.shields.io/github/downloads/Thomas55555/husqvarna_automower/total.svg)](https://img.shields.io/github/downloads/Thomas55555/husqvarna_automower/total.svg)
+# This fork varies from @Thomas55555 as follows
+
+- Adds a zone sensor to track the zone the mower is in.  This is configurable and supports polygon zones.
+- Uses a binary error sensor that has an error number and state for attributes.
+- Better mower location icon
+- Allows setting a home position, this is where the mower charger is located, when the mower is home the location of the zone will indicate home and the map camera will show the mower at the charger instead of it's reported position.
 
 Custom component to support Automower.
 
@@ -26,7 +29,7 @@ need a API key to use this integration, refer to [this
 guide](https://developer.husqvarnagroup.cloud/docs/getting-started) on how to
 get one.
 
-![Screenshot of the integration](https://github.com/Thomas55555/husqvarna_automower/blob/master/screenshot_husqvarna_automower.PNG)
+![Screenshot of the integration](/images/screenshot_husqvarna_automower.png)
 
 ## Supported devices
 
@@ -98,6 +101,8 @@ You have two options to login.
 2.  Login with API-key, username and password.
 
 ### Configuring the camera sensor
+
+![Example of camera](/images/map_camera.png)
 
 The optional camera entity is disabled by default.  The camera entity will plot the current coordinates and location history of the mower on a user provided image. To configure the entity you need to upload your desired map image and determine the coordinates of the top left corner and the bottom right corner of your selected image.
 
