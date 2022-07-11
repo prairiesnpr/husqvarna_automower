@@ -1,4 +1,4 @@
-"""Creates a sesnor entity for the mower"""
+"""Creates a sensor entity for the mower."""
 import logging
 import json
 
@@ -125,7 +125,7 @@ PERCENTAGE_SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Setup select platform."""
+    """Set up select platform."""
     session = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
         AutomowerProblemSensor(session, idx)
@@ -214,6 +214,7 @@ class AutomowerProblemSensor(SensorEntity, AutomowerEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, session, idx):
+        """Set up AutomowerProblemSensor."""
         super().__init__(session, idx)
         self._attr_name = f"{self.mower_name} Problem Sensor"
         self._attr_unique_id = f"{self.mower_id}_problem_sensor"
@@ -255,6 +256,7 @@ class AutomowerBatterySensor(SensorEntity, AutomowerEntity):
     _attr_device_class = SensorDeviceClass.BATTERY
 
     def __init__(self, session, idx):
+        """Set up AutomowerBatterySensor."""
         super().__init__(session, idx)
         self._attr_name = f"{self.mower_name} Battery Level"
         self._attr_unique_id = f"{self.mower_id}_battery_level"
@@ -272,6 +274,7 @@ class AutomowerNextStartSensor(SensorEntity, AutomowerEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
     def __init__(self, session, idx):
+        """Set up AutomowerNextStartSensor."""
         super().__init__(session, idx)
         self._attr_name = f"{self.mower_name} Next Start"
         self._attr_unique_id = f"{self.mower_id}_next_start"
@@ -296,6 +299,7 @@ class AutomowerModeSensor(SensorEntity, AutomowerEntity):
     _attr_entity_registry_enabled_default = False
 
     def __init__(self, session, idx):
+        """Set up AutomowerModeSensor."""
         super().__init__(session, idx)
         self._attr_name = f"{self.mower_name} Mode"
         self._attr_unique_id = f"{self.mower_id}_mode"
@@ -311,6 +315,7 @@ class AutomowerStatisticsSensor(SensorEntity, AutomowerEntity):
     """Defining the AutomowerTimeStatisticsSensor Entity."""
 
     def __init__(self, session, idx, description: SensorEntityDescription):
+        """Set up AutomowerStatisticsSensors."""
         super().__init__(session, idx)
         self.entity_description = description
         self._attr_name = f"{self.mower_name} {description.name}"
@@ -327,6 +332,7 @@ class AutomowerStatisticsPercentageSensor(SensorEntity, AutomowerEntity):
     """Defining the AutomowerPercentageTimeSensor Entity."""
 
     def __init__(self, session, idx, description: SensorEntityDescription):
+        """AutomowerStatisticsPercentageSensors."""
         super().__init__(session, idx)
         self.entity_description = description
         self._attr_name = f"{self.mower_name} {description.name}"
