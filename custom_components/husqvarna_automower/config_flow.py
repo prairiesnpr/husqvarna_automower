@@ -29,6 +29,8 @@ from .const import (
     HOME_LOCATION,
 )
 
+from .map_utils import ValidatePointString
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -157,21 +159,25 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_home_init(self, user_input=None):
         """Configure the home location."""
-
+        errors = {}
         if user_input:
             if user_input.get(HOME_LOCATION):
-                self.user_input[HOME_LOCATION] = [
-                    float(x.strip())
-                    for x in user_input.get(HOME_LOCATION).split(",")
-                    if x
-                ]
-                return await self._update_options()
+                pnt_validator = ValidatePointString(user_input.get(HOME_LOCATION))
+                pnt_valid, pnt_error = pnt_validator.is_valid()
+
+                if pnt_valid:
+                    self.user_input[HOME_LOCATION] = pnt_validator.point().to_tuple()
+                    return await self._update_options()
+                errors["base"] = pnt_error
+
         data_schema = vol.Schema(
             {
                 vol.Required(HOME_LOCATION, default=self.home_location): str,
             }
         )
-        return self.async_show_form(step_id="home_init", data_schema=data_schema)
+        return self.async_show_form(
+            step_id="home_init", data_schema=data_schema, errors=errors
+        )
 
     async def async_step_geofence_init(self, user_input=None):
         """Configure the geofence"""
