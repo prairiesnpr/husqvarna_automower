@@ -150,7 +150,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
 
                 pdraw.polygon(
                     zone_poly,
-                    fill=tuple(zone_color + [75]),
+                    fill=tuple(zone_color + [25]),
                     outline=tuple(zone_color + [255]),
                 )
                 self._map_image.paste(poly_img, mask=poly_img)
