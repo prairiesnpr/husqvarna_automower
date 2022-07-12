@@ -282,6 +282,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         display_zone = sel_zone.get(ZONE_DISPLAY, False)
         display_color = sel_zone.get(ZONE_COLOR, "255,255,255")
+        display_color = ','.join([str(i) for i in display_color])
 
         data_schema = vol.Schema(
             {
