@@ -160,12 +160,13 @@ async def async_setup_entry(
 
 
 class AutomowerZoneSensor(SensorEntity, AutomowerEntity):
-    """Define the AutomowerZoneSensor"""
+    """Define the AutomowerZoneSensor."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
 
     def __init__(self, session, idx, entry):
+        """Initialize the zone object."""
         super().__init__(session, idx)
         self._attr_name = f"{self.mower_name} Zone Sensor"
         self._attr_unique_id = f"{self.mower_id}_zone_sensor"
@@ -176,9 +177,11 @@ class AutomowerZoneSensor(SensorEntity, AutomowerEntity):
         self.zone_id = "unknown"
 
     def _load_zones(self):
+        """Load zones from a config entry."""
         return json.loads(self.entry.options.get(CONF_ZONES, "{}"))
 
     def _find_current_zone(self):
+        """Find current zone."""
         if self._is_home and self.home_location:
             self.zone = {ZONE_NAME: "Home"}
             self.zone_id = "home"

@@ -116,7 +116,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         self.configured_zones = self.user_input.get(CONF_ZONES, {})
 
-
         self.camera_enabled = self.user_input.get(ENABLE_CAMERA, False)
         self.map_top_left_coord = self.user_input.get(GPS_TOP_LEFT, "")
         if self.map_top_left_coord != "":
@@ -179,9 +178,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             step_id="home_init", data_schema=data_schema, errors=errors
         )
 
- def async_step_geofence_init(self, user_input=None):
-        """Configure the geofence"""
-
+    async def async_step_geofence_init(self, user_input=None):
+        """Configure the geofence."""
         if user_input:
             self.sel_zone_id = user_input.get(ZONE_SEL, ZONE_NEW)
             if self.sel_zone_id == ZONE_FINISH:
@@ -270,7 +268,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="zone_edit", data_schema=data_schema, errors=errors
         )
-
 
     async def async_step_camera_init(self, user_input=None):
         """Enable / Disable the camera."""
