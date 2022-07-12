@@ -12,6 +12,8 @@ from homeassistant.const import CONF_TOKEN
 from homeassistant.core import callback
 from homeassistant.helpers import config_entry_oauth2_flow
 
+from .map_utils import ValidateRGB
+
 from .const import (
     DOMAIN,
     ENABLE_CAMERA,
@@ -19,6 +21,7 @@ from .const import (
     GPS_TOP_LEFT,
     MAP_IMG_PATH,
     MOWER_IMG_PATH,
+    MAP_PATH_COLOR,
     CONF_ZONES,
     ZONE_COORD,
     ZONE_NAME,
@@ -138,6 +141,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             MAP_IMG_PATH, os.path.join(self.base_path, "resources/map_image.png")
         )
 
+        self.path_int_colors = self.user_input.get(MAP_PATH_COLOR, [255, 0, 0])
+
         self.home_location = self.user_input.get(HOME_LOCATION, "")
         if self.home_location != "":
             self.home_location = ",".join([str(x) for x in self.home_location])
@@ -239,22 +244,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         if len(zone_coord) < 4:
                             errors[ZONE_COORD] = "too_few_points"
 
-                        zone_color = user_input.get(ZONE_COLOR).split(",")
-                        zone_int_colors = [255, 255, 255]
+                        zone_color = ValidateRGB(user_input.get(ZONE_COLOR))
 
-                        if len(zone_color) != 3:
-                            errors[ZONE_COLOR] = "color_error"
+                        zone_int_colors = [255, 255, 255]
+                        if zone_color.is_valid():
+                            zone_int_colors = zone_color.rgb_val
                         else:
-                            for c in range(3):
-                                try:
-                                    color_val = int(zone_color[c])
-                                    if color_val < 0 or color_val > 255:
-                                        errors[ZONE_COLOR] = "color_error"
-                                        break
-                                    else:
-                                        zone_int_colors[c] = color_val
-                                except ValueError:
-                                    errors[ZONE_COLOR] = "color_error"
+                            errors[ZONE_COLOR] = "color_error"
 
                         if not errors:
                             self.configured_zones[self.sel_zone_id] = {
@@ -282,7 +278,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         display_zone = sel_zone.get(ZONE_DISPLAY, False)
         display_color = sel_zone.get(ZONE_COLOR, "255,255,255")
-        display_color = ','.join([str(i) for i in display_color])
+        display_color = ",".join([str(i) for i in display_color])
 
         data_schema = vol.Schema(
             {
@@ -365,8 +361,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 else:
                     errors[MAP_IMG_PATH] = "not_file"
 
+            if user_input.get(MAP_PATH_COLOR):
+                path_color = ValidateRGB(user_input.get(MAP_PATH_COLOR))
+                if path_color.is_valid():
+                    self.user_input[MAP_PATH_COLOR] = path_color.rgb_val
+                else:
+                    errors[MAP_PATH_COLOR] = "color_error"
+
             if not errors:
                 return await self._update_options()
+
+        path_color_str = ",".join([str(i) for i in self.path_int_colors])
 
         data_schema = vol.Schema(
             {
@@ -376,6 +381,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 ): str,
                 vol.Required(MOWER_IMG_PATH, default=self.mower_image_path): str,
                 vol.Required(MAP_IMG_PATH, default=self.map_img_path): str,
+                vol.Required(MAP_PATH_COLOR, default=path_color_str): str,
             }
         )
         return self.async_show_form(

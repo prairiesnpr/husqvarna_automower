@@ -16,6 +16,31 @@ def validate_image(img_path: str) -> bool:
     return True
 
 
+class ValidateRGB:
+    """Ensure RGB input is valid."""
+
+    def __init__(self, rgb_str: str) -> None:
+        """Initialize the ValidateRGB Object."""
+        self.rgb_val = rgb_str.split(",")
+
+    def is_valid(self) -> bool:
+        """Return True if a valid RGB value."""
+        if len(self.rgb_val) != 3:
+            return False
+        else:
+            for c in range(3):
+                try:
+                    color_val = int(self.rgb_val[c])
+                    if color_val < 0 or color_val > 255:
+                        return False
+                        break
+                    else:
+                        self.rgb_val[c] = color_val
+                except ValueError:
+                    return False
+        return True
+
+
 class LatLon:
     """Define a Latitude and Longitude object."""
 

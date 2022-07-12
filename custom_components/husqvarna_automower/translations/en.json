@@ -52,8 +52,8 @@
                     "gps_top_left": "GPS Coordinates of the Top Left Image Corner",
                     "gps_bottom_right": "GPS Coordinates of the Bottom Right Image Corner",
                     "mower_img_path": "Path to the mower location image",
-                    "map_img_path": "Path to the map image"
-
+                    "map_img_path": "Path to the map image",
+                    "map_path_color": "Path RGB color"
                 },
                 "description": "Camera Settings",
                 "title": "Husqvarna Automower Options"
