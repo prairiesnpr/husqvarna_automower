@@ -1,5 +1,6 @@
 """The constants for the Husqvarna Automower integration."""
 from homeassistant.const import Platform
+from shapely.geometry import Polygon
 
 # Base component constants
 NAME = "husqvarna_automower"
@@ -7,7 +8,7 @@ DOMAIN = "husqvarna_automower"
 DOMAIN_DATA = f"{DOMAIN}_data"
 INTEGRATION_VERSION = "master"
 ISSUE_URL = "https://github.com/Thomas55555/husqvarna_automower"
-HUSQVARNA_URL = "https://developer.husqvarnagroup.cloud/apps"
+HUSQVARNA_URL = "https://developer.husqvarnagroup.cloud/applications"
 OAUTH2_AUTHORIZE = "https://api.authentication.husqvarnagroup.dev/v1/oauth2/authorize"
 OAUTH2_TOKEN = "https://api.authentication.husqvarnagroup.dev/v1/oauth2/token"
 
@@ -206,3 +207,6 @@ WEEKDAYS = (
     "saturday",
     "sunday",
 )
+
+
+LAT_LON_BOUNDS = Polygon.from_bounds(xmin=-90.0, ymin=-180.0, xmax=90.0, ymax=180.0)

@@ -35,7 +35,7 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Setup select platform."""
+    """Set up select platform."""
     session = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
         AutomowerCamera(session, idx, entry)
@@ -44,12 +44,13 @@ async def async_setup_entry(
 
 
 class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
-    """Define an Automower Camera entity"""
+    """Representation of the AutomowerCamera element."""
 
     _attr_entity_registry_enabled_default = False
     _attr_frame_interval: float = 300
 
     def __init__(self, session, idx, entry):
+        """Initialize AutomowerCamera."""
         Camera.__init__(self)
         AutomowerEntity.__init__(self, session, idx)
 
@@ -97,6 +98,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
     async def async_camera_image(
         self, width: Optional[int] = None, height: Optional[int] = None
     ) -> Optional[bytes]:
+        """Return the caerma image."""
         return self._image_bytes
 
     def _image_to_bytes(self):
@@ -105,11 +107,13 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         self._image_bytes = img_byte_arr.getvalue()
 
     def turn_on(self):
+        """Turn the camera on."""
         self.session.register_data_callback(
             lambda data: self._generate_image(data), schedule_immediately=True
         )
 
     def turn_off(self):
+        """Turn the camera off."""
         self.session.unregister_data_callback(lambda data: self._generate_image(data))
 
     @property
