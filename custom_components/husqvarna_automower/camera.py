@@ -21,6 +21,7 @@ from .const import (
     GPS_TOP_LEFT,
     MAP_IMG_PATH,
     MOWER_IMG_PATH,
+    MAP_PATH_COLOR,
     HOME_LOCATION,
     CONF_ZONES,
     ZONE_COORD,
@@ -69,6 +70,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         self._image_to_bytes()
         self._map_image = None
         self._overlay_image = None
+        self._path_color = self.entry.options.get(MAP_PATH_COLOR, [255, 0, 0])
 
         self.session = session
 
@@ -212,7 +214,11 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
             )
             plot_points = self._find_points_on_line(scaled_loc_1, scaled_loc_2)
             for p in range(0, len(plot_points) - 1, 2):
-                img_draw.line((plot_points[p], plot_points[p + 1]), fill="red", width=2)
+                img_draw.line(
+                    (plot_points[p], plot_points[p + 1]),
+                    fill=tuple(self._path_color + [255]),
+                    width=2,
+                )
 
         img_w, img_h = self._overlay_image.size
 
