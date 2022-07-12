@@ -14,29 +14,27 @@ class LatLon:
     def is_valid(self) -> bool:
         return LAT_LON_BOUNDS.intersects(self.point)
 
-    def to_tuple(self) -> tuple[float, float]:
-        return (self.lat, self.lon)
 
 
 class ValidatePointString:
     def __init__(self, point_string: str) -> None:
         self.point_str = point_string
-        self.point = self.point_str.split(",")
-        self.error_string = ""
+        self.point_list = self.point_str.split(",")
+        self.error = ""
         self.valid = False
         self.coord = None
 
-        if len(self.point) != 2:
-            self.error = "Lat and Lon required, usa a comma to seperate"
+        if len(self.point_list) != 2:
+            self.error = "invalid_str"
             return
 
         try:
-            self.coord = LatLon(float(self.point[0]), float(self.point[1]))
+            self.coord = LatLon(float(self.point_list[0]), float(self.point_list[1]))
             if not self.coord.is_valid():
-                self.error = "Coordinates are not valid, not in WGS84 datum"
+                self.error = "not_wgs84"
                 return
         except ValueError:
-            self.error = "Coordinates are not valid, lat and lon sperated by a comma in signed degree format"
+            self.error = "cant_parse"
             return
 
         self.valid = True
@@ -44,5 +42,7 @@ class ValidatePointString:
     def is_valid(self) -> tuple[bool, str]:
         return (self.valid, self.error)
 
+    @property
     def point(self) -> Point:
-        return self.coord
+        return self.coord.point
+

@@ -163,9 +163,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 pnt_valid, pnt_error = pnt_validator.is_valid()
 
                 if pnt_valid:
-                    self.user_input[HOME_LOCATION] = pnt_validator.point().to_tuple()
+                    self.user_input[HOME_LOCATION] = [pnt_validator.point.x, pnt_validator.point.y]
                     return await self._update_options()
-                errors["base"] = pnt_error
+                errors[HOME_LOCATION] = pnt_error
 
         data_schema = vol.Schema(
             {
@@ -203,6 +203,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_zone_edit(self, user_input=None):
         """Update the selected zone configuration."""
+        errors = {}
+
         if user_input:
             if user_input.get(ZONE_DEL) is True:
                 self.configured_zones.pop(self.sel_zone_id, None)
@@ -211,22 +213,32 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 if user_input.get(ZONE_COORD):
                     for coord in user_input.get(ZONE_COORD).split(";"):
                         if coord != "":
-                            coord_split = coord.split(",")
-                            zone_coord.append(
-                                (float(coord_split[0]), float(coord_split[1]))
+                            pnt_validator = ValidatePointString(coord)
+                            pnt_valid, pnt_error = pnt_validator.is_valid()
+
+                            if pnt_valid:
+                                zone_coord.append((pnt_validator.point.x, pnt_validator.point.y))
+                            else:
+                                errors[ZONE_COORD] = pnt_error
+                                break
+
+                    if not errors:
+                        if self.sel_zone_id == ZONE_NEW:
+                            self.sel_zone_id = (
+                                user_input.get(ZONE_NAME).lower().strip().replace(" ", "_")
                             )
-                    if self.sel_zone_id == ZONE_NEW:
-                        self.sel_zone_id = (
-                            user_input.get(ZONE_NAME).lower().strip().replace(" ", "_")
-                        )
 
-                    self.configured_zones[self.sel_zone_id] = {
-                        ZONE_COORD: zone_coord,
-                        ZONE_NAME: user_input.get(ZONE_NAME).strip(),
-                    }
+                        if len(zone_coord) < 4:
+                            errors[ZONE_COORD] = "too_few_points"
+                        else:
+                            self.configured_zones[self.sel_zone_id] = {
+                                ZONE_COORD: zone_coord,
+                                ZONE_NAME: user_input.get(ZONE_NAME).strip(),
+                            }
 
-            self.user_input.update({CONF_ZONES: self.configured_zones})
-            return await self.async_step_geofence_init()
+            if not errors:
+                self.user_input.update({CONF_ZONES: self.configured_zones})
+                return await self.async_step_geofence_init()
 
         sel_zone = self.configured_zones.get(self.sel_zone_id, {})
         current_coordinates = sel_zone.get(ZONE_COORD, "")
@@ -247,7 +259,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(ZONE_DEL, default=False): bool,
             }
         )
-        return self.async_show_form(step_id="zone_edit", data_schema=data_schema)
+        return self.async_show_form(step_id="zone_edit", data_schema=data_schema, errors=errors)
 
     async def async_step_camera_init(self, user_input=None):
         """Enable / Disable the camera."""
@@ -268,23 +280,41 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_camera_config(self, user_input=None):
         """Update the camera configuration."""
+        errors = {}
+
         if user_input:
             if user_input.get(GPS_TOP_LEFT):
-                self.user_input[GPS_TOP_LEFT] = [
-                    float(x.strip())
-                    for x in user_input.get(GPS_TOP_LEFT).split(",")
-                    if x
-                ]
-            if user_input.get(GPS_BOTTOM_RIGHT):
-                self.user_input[GPS_BOTTOM_RIGHT] = [
-                    float(x.strip())
-                    for x in user_input.get(GPS_BOTTOM_RIGHT).split(",")
-                    if x
-                ]
+                pnt_validator = ValidatePointString(user_input.get(GPS_TOP_LEFT))
+                pnt_valid, pnt_error = pnt_validator.is_valid()
 
-            self.user_input[MOWER_IMG_PATH] = user_input.get(MOWER_IMG_PATH)
-            self.user_input[MAP_IMG_PATH] = user_input.get(MAP_IMG_PATH)
-            return await self._update_options()
+                if pnt_valid:
+                    self.user_input[GPS_TOP_LEFT] = [pnt_validator.point.x, pnt_validator.point.y]
+                else:
+                    errors[GPS_TOP_LEFT] = pnt_error
+
+            if user_input.get(GPS_BOTTOM_RIGHT):
+                pnt_validator = ValidatePointString(user_input.get(GPS_BOTTOM_RIGHT))
+                pnt_valid, pnt_error = pnt_validator.is_valid()
+
+                if pnt_valid:
+                    self.user_input[GPS_BOTTOM_RIGHT] = [pnt_validator.point.x, pnt_validator.point.y]
+                else:
+                    errors[GPS_BOTTOM_RIGHT] = pnt_error
+
+            if user_input.get(MOWER_IMG_PATH):
+                if os.path.isfile(user_input.get(MOWER_IMG_PATH)):
+                    self.user_input[MOWER_IMG_PATH] = user_input.get(MOWER_IMG_PATH)
+                else:
+                    errors[MOWER_IMG_PATH] = "not_file"
+
+            if user_input.get(MAP_IMG_PATH):
+                if os.path.isfile(user_input.get(MAP_IMG_PATH)):
+                    self.user_input[MAP_IMG_PATH] = user_input.get(MAP_IMG_PATH)
+                else:
+                    errors[MAP_IMG_PATH] = "not_file"
+
+            if not errors:
+                return await self._update_options()
 
         data_schema = vol.Schema(
             {
@@ -296,7 +326,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(MAP_IMG_PATH, default=self.map_img_path): str,
             }
         )
-        return self.async_show_form(step_id="camera_config", data_schema=data_schema)
+        return self.async_show_form(step_id="camera_config", data_schema=data_schema, errors=errors)
 
     async def _update_options(self):
         """Update config entry options."""
