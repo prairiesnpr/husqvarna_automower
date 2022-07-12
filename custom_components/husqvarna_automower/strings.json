@@ -32,6 +32,7 @@
         "zone_edit": {"data": {
             "name": "Zone Name",
             "zone_coordinates": "Zone Coordinates lat,long;lat,long...",
+            "display": "Show zone on map camera",
             "delete": "Delete this zone"
             },
             "description": "Configure Zone",
@@ -63,7 +64,8 @@
         "not_file": "Invalid path, not a file",
         "too_few_points": "Must have atleast 3 points to define a zone",
         "points_match": "Top Left and Bottom Right coordinates can't be the same",
-        "not_image": "Seleted file is not a valid image"
+        "not_image": "Seleted file is not a valid image",
+        "color_error": "Values are RGB, seperated by a comma, 0-255"
     }
   },
   "system_health": {

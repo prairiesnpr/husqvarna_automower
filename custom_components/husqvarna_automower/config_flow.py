@@ -26,6 +26,8 @@ from .const import (
     ZONE_SEL,
     ZONE_NEW,
     ZONE_FINISH,
+    ZONE_DISPLAY,
+    ZONE_COLOR,
     HOME_LOCATION,
 )
 
@@ -236,10 +238,30 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
                         if len(zone_coord) < 4:
                             errors[ZONE_COORD] = "too_few_points"
+
+                        zone_color = user_input.get(ZONE_COLOR).split(",")
+                        zone_int_colors = [255, 255, 255]
+
+                        if len(zone_color) != 3:
+                            errors[ZONE_COLOR] = "color_error"
                         else:
+                            for c in range(3):
+                                try:
+                                    color_val = int(zone_color[c])
+                                    if color_val < 0 or color_val > 255:
+                                        errors[ZONE_COLOR] = "color_error"
+                                        break
+                                    else:
+                                        zone_int_colors[c] = color_val
+                                except ValueError:
+                                    errors[ZONE_COLOR] = "color_error"
+
+                        if not errors:
                             self.configured_zones[self.sel_zone_id] = {
                                 ZONE_COORD: zone_coord,
                                 ZONE_NAME: user_input.get(ZONE_NAME).strip(),
+                                ZONE_COLOR: zone_int_colors,
+                                ZONE_DISPLAY: user_input.get(ZONE_DISPLAY),
                             }
 
             if not errors:
@@ -258,10 +280,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         sel_zone_coordinates = str_zone
 
+        display_zone = sel_zone.get(ZONE_DISPLAY, False)
+        display_color = sel_zone.get(ZONE_COLOR, "255,255,255")
+
         data_schema = vol.Schema(
             {
                 vol.Required(ZONE_NAME, default=sel_zone_name): str,
                 vol.Required(ZONE_COORD, default=sel_zone_coordinates): str,
+                vol.Required(ZONE_DISPLAY, default=display_zone): bool,
+                vol.Required(ZONE_COLOR, default=display_color): str,
                 vol.Required(ZONE_DEL, default=False): bool,
             }
         )
