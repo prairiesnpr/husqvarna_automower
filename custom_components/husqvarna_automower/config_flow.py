@@ -163,7 +163,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 pnt_valid, pnt_error = pnt_validator.is_valid()
 
                 if pnt_valid:
-                    self.user_input[HOME_LOCATION] = [pnt_validator.point.x, pnt_validator.point.y]
+                    self.user_input[HOME_LOCATION] = [
+                        pnt_validator.point.x,
+                        pnt_validator.point.y,
+                    ]
                     return await self._update_options()
                 errors[HOME_LOCATION] = pnt_error
 
@@ -217,7 +220,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             pnt_valid, pnt_error = pnt_validator.is_valid()
 
                             if pnt_valid:
-                                zone_coord.append((pnt_validator.point.x, pnt_validator.point.y))
+                                zone_coord.append(
+                                    (pnt_validator.point.x, pnt_validator.point.y)
+                                )
                             else:
                                 errors[ZONE_COORD] = pnt_error
                                 break
@@ -225,7 +230,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     if not errors:
                         if self.sel_zone_id == ZONE_NEW:
                             self.sel_zone_id = (
-                                user_input.get(ZONE_NAME).lower().strip().replace(" ", "_")
+                                user_input.get(ZONE_NAME)
+                                .lower()
+                                .strip()
+                                .replace(" ", "_")
                             )
 
                         if len(zone_coord) < 4:
@@ -259,7 +267,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(ZONE_DEL, default=False): bool,
             }
         )
-        return self.async_show_form(step_id="zone_edit", data_schema=data_schema, errors=errors)
+        return self.async_show_form(
+            step_id="zone_edit", data_schema=data_schema, errors=errors
+        )
 
     async def async_step_camera_init(self, user_input=None):
         """Enable / Disable the camera."""
@@ -288,7 +298,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 pnt_valid, pnt_error = pnt_validator.is_valid()
 
                 if pnt_valid:
-                    self.user_input[GPS_TOP_LEFT] = [pnt_validator.point.x, pnt_validator.point.y]
+                    self.user_input[GPS_TOP_LEFT] = [
+                        pnt_validator.point.x,
+                        pnt_validator.point.y,
+                    ]
                 else:
                     errors[GPS_TOP_LEFT] = pnt_error
 
@@ -297,7 +310,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 pnt_valid, pnt_error = pnt_validator.is_valid()
 
                 if pnt_valid:
-                    self.user_input[GPS_BOTTOM_RIGHT] = [pnt_validator.point.x, pnt_validator.point.y]
+                    self.user_input[GPS_BOTTOM_RIGHT] = [
+                        pnt_validator.point.x,
+                        pnt_validator.point.y,
+                    ]
                 else:
                     errors[GPS_BOTTOM_RIGHT] = pnt_error
 
@@ -326,7 +342,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(MAP_IMG_PATH, default=self.map_img_path): str,
             }
         )
-        return self.async_show_form(step_id="camera_config", data_schema=data_schema, errors=errors)
+        return self.async_show_form(
+            step_id="camera_config", data_schema=data_schema, errors=errors
+        )
 
     async def _update_options(self):
         """Update config entry options."""
