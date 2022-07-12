@@ -110,10 +110,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.config_entry = config_entry
 
         self.user_input = dict(config_entry.options)
+
         if self.user_input.get(CONF_ZONES, False):
             self.user_input[CONF_ZONES] = json.loads(self.user_input[CONF_ZONES])
 
         self.configured_zones = self.user_input.get(CONF_ZONES, {})
+
 
         self.camera_enabled = self.user_input.get(ENABLE_CAMERA, False)
         self.map_top_left_coord = self.user_input.get(GPS_TOP_LEFT, "")
@@ -142,12 +144,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.sel_zone_id = None
 
     async def async_step_init(self, user_input=None):
-        """Manage option flow"""
+        """Manage option flow."""
         return await self.async_step_select()
 
     async def async_step_select(self, user_input=None):
-        """Select Configuration Item"""
-
+        """Select Configuration Item."""
         return self.async_show_menu(
             step_id="select",
             menu_options=["geofence_init", "camera_init", "home_init"],
@@ -178,7 +179,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             step_id="home_init", data_schema=data_schema, errors=errors
         )
 
-    async def async_step_geofence_init(self, user_input=None):
+ def async_step_geofence_init(self, user_input=None):
         """Configure the geofence"""
 
         if user_input:
@@ -270,6 +271,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             step_id="zone_edit", data_schema=data_schema, errors=errors
         )
 
+
     async def async_step_camera_init(self, user_input=None):
         """Enable / Disable the camera."""
         if user_input:
@@ -357,6 +359,5 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def _update_options(self):
         """Update config entry options."""
-
         self.user_input[CONF_ZONES] = json.dumps(self.user_input.get(CONF_ZONES, {}))
         return self.async_create_entry(title="", data=self.user_input)

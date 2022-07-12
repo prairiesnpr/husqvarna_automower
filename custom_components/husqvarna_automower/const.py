@@ -226,5 +226,4 @@ WEEKDAYS = (
     "sunday",
 )
 
-
 LAT_LON_BOUNDS = Polygon.from_bounds(xmin=-90.0, ymin=-180.0, xmax=90.0, ymax=180.0)
