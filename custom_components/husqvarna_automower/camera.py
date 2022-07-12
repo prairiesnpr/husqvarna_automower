@@ -3,6 +3,7 @@
 import io
 import logging
 import math
+import json
 from typing import Optional
 
 from PIL import Image, ImageDraw
@@ -21,6 +22,10 @@ from .const import (
     MAP_IMG_PATH,
     MOWER_IMG_PATH,
     HOME_LOCATION,
+    CONF_ZONES,
+    ZONE_COORD,
+    ZONE_COLOR,
+    ZONE_DISPLAY,
 )
 from .entity import AutomowerEntity
 from .vacuum import HusqvarnaAutomowerStateMixin
@@ -62,12 +67,17 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         self._image = Image.new(mode="RGB", size=(200, 200))
         self._image_bytes = None
         self._image_to_bytes()
+        self._map_image = None
+        self._overlay_image = None
 
         self.session = session
 
         if self.entry.options.get(ENABLE_CAMERA, False):
             self.top_left_coord = self.entry.options.get(GPS_TOP_LEFT)
             self.bottom_right_coord = self.entry.options.get(GPS_BOTTOM_RIGHT)
+            self._load_map_image()
+            self._load_mower_image()
+            self._overlay_zones()
             self.session.register_data_callback(
                 lambda data: self._generate_image(data), schedule_immediately=True
             )
@@ -101,7 +111,50 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         """Return the caerma image."""
         return self._image_bytes
 
+    def _load_map_image(self):
+        """Load the map image."""
+        map_image_path = self.entry.options.get(MAP_IMG_PATH)
+        self._map_image = Image.open(map_image_path, "r")
+
+    def _load_mower_image(self):
+        """Load the mower overlay image."""
+        overlay_path = self.entry.options.get(MOWER_IMG_PATH)
+        self._overlay_image = Image.open(overlay_path, "r")
+        mower_img_w = 64
+        mower_wpercent = mower_img_w / float(self._overlay_image.size[0])
+        hsize = int((float(self._overlay_image.size[1]) * float(mower_wpercent)))
+        self._overlay_image = self._overlay_image.resize(
+            (mower_img_w, hsize), Image.ANTIALIAS
+        )
+
+    def _overlay_zones(self):
+        """Draw zone overlays."""
+        zones = json.loads(self.entry.options.get(CONF_ZONES, "{}"))
+
+        for zone_id, zone in zones.items():
+            if zone.get(ZONE_DISPLAY, False):
+                zone_poly = [
+                    self._scale_to_img(
+                        point, (self._map_image.size[0], self._map_image.size[1])
+                    )
+                    for point in zone.get(ZONE_COORD)
+                ]
+                poly_img = Image.new(
+                    "RGBA", (self._map_image.size[0], self._map_image.size[1])
+                )
+                pdraw = ImageDraw.Draw(poly_img)
+
+                zone_color = zone.get(ZONE_COLOR, [255, 255, 255])
+
+                pdraw.polygon(
+                    zone_poly,
+                    fill=tuple(zone_color + [75]),
+                    outline=tuple(zone_color + [255]),
+                )
+                self._map_image.paste(poly_img, mask=poly_img)
+
     def _image_to_bytes(self):
+        """Convert image to byte array."""
         img_byte_arr = io.BytesIO()
         self._image.save(img_byte_arr, format="PNG")
         self._image_bytes = img_byte_arr.getvalue()
@@ -118,9 +171,11 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
 
     @property
     def supported_features(self) -> int:
+        """Show supported features."""
         return CameraEntityFeature.ON_OFF
 
     def _generate_image(self, data: dict):
+        """Generate the image."""
         position_history = AutomowerEntity.get_mower_attributes(self)["positions"]
         if self._is_home and self.home_location:
             location = self.home_location
@@ -135,42 +190,43 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         else:
             self._position_history = position_history
 
-        map_image_path = self.entry.options.get(MAP_IMG_PATH)
-        map_image = Image.open(map_image_path, "r")
-        overlay_path = self.entry.options.get(MOWER_IMG_PATH)
-        overlay_image = Image.open(overlay_path, "r")
-        x1, y1 = self._scale_to_img(location, (map_image.size[0], map_image.size[1]))
-        img_draw = ImageDraw.Draw(map_image)
+        x1, y1 = self._scale_to_img(
+            location, (self._map_image.size[0], self._map_image.size[1])
+        )
+        img_draw = ImageDraw.Draw(self._map_image)
+
         for i in range(len(position_history) - 1, 0, -1):
             point_1 = (
                 position_history[i]["latitude"],
                 position_history[i]["longitude"],
             )
             scaled_loc_1 = self._scale_to_img(
-                point_1, (map_image.size[0], map_image.size[1])
+                point_1, (self._map_image.size[0], self._map_image.size[1])
             )
             point_2 = (
                 position_history[i - 1]["latitude"],
                 position_history[i - 1]["longitude"],
             )
             scaled_loc_2 = self._scale_to_img(
-                point_2, (map_image.size[0], map_image.size[1])
+                point_2, (self._map_image.size[0], self._map_image.size[1])
             )
             plot_points = self._find_points_on_line(scaled_loc_1, scaled_loc_2)
             for p in range(0, len(plot_points) - 1, 2):
                 img_draw.line((plot_points[p], plot_points[p + 1]), fill="red", width=2)
-        mower_img_w = 64
-        mower_wpercent = mower_img_w / float(overlay_image.size[0])
-        hsize = int((float(overlay_image.size[1]) * float(mower_wpercent)))
-        overlay_image = overlay_image.resize((mower_img_w, hsize), Image.ANTIALIAS)
-        img_w, img_h = overlay_image.size
-        map_image.paste(overlay_image, (x1 - img_w // 2, y1 - img_h), overlay_image)
+
+        img_w, img_h = self._overlay_image.size
+
+        map_image = self._map_image.copy()
+        map_image.paste(
+            self._overlay_image, (x1 - img_w // 2, y1 - img_h), self._overlay_image
+        )
         self._image = map_image
         self._image_to_bytes()
 
     def _find_points_on_line(
         self, point_1: ImgPoint, point_2: ImgPoint
     ) -> list[ImgPoint]:
+        """Find points on a line."""
         dash_length = 10
         line_length = math.sqrt(
             (point_2[0] - point_1[0]) ** 2 + (point_2[1] - point_1[1]) ** 2
@@ -189,6 +245,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
     def _get_point_on_vector(
         self, initial_pt: ImgPoint, terminal_pt: ImgPoint, distance: int
     ) -> ImgPoint:
+        """Get points on a vector."""
         v = np.array(initial_pt, dtype=float)
         u = np.array(terminal_pt, dtype=float)
         n = v - u

@@ -26,6 +26,8 @@ from .const import (
     ZONE_SEL,
     ZONE_NEW,
     ZONE_FINISH,
+    ZONE_DISPLAY,
+    ZONE_COLOR,
     HOME_LOCATION,
 )
 
@@ -110,6 +112,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.config_entry = config_entry
 
         self.user_input = dict(config_entry.options)
+
         if self.user_input.get(CONF_ZONES, False):
             self.user_input[CONF_ZONES] = json.loads(self.user_input[CONF_ZONES])
 
@@ -142,12 +145,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.sel_zone_id = None
 
     async def async_step_init(self, user_input=None):
-        """Manage option flow"""
+        """Manage option flow."""
         return await self.async_step_select()
 
     async def async_step_select(self, user_input=None):
-        """Select Configuration Item"""
-
+        """Select Configuration Item."""
         return self.async_show_menu(
             step_id="select",
             menu_options=["geofence_init", "camera_init", "home_init"],
@@ -179,8 +181,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def async_step_geofence_init(self, user_input=None):
-        """Configure the geofence"""
-
+        """Configure the geofence."""
         if user_input:
             self.sel_zone_id = user_input.get(ZONE_SEL, ZONE_NEW)
             if self.sel_zone_id == ZONE_FINISH:
@@ -237,10 +238,30 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
                         if len(zone_coord) < 4:
                             errors[ZONE_COORD] = "too_few_points"
+
+                        zone_color = user_input.get(ZONE_COLOR).split(",")
+                        zone_int_colors = [255, 255, 255]
+
+                        if len(zone_color) != 3:
+                            errors[ZONE_COLOR] = "color_error"
                         else:
+                            for c in range(3):
+                                try:
+                                    color_val = int(zone_color[c])
+                                    if color_val < 0 or color_val > 255:
+                                        errors[ZONE_COLOR] = "color_error"
+                                        break
+                                    else:
+                                        zone_int_colors[c] = color_val
+                                except ValueError:
+                                    errors[ZONE_COLOR] = "color_error"
+
+                        if not errors:
                             self.configured_zones[self.sel_zone_id] = {
                                 ZONE_COORD: zone_coord,
                                 ZONE_NAME: user_input.get(ZONE_NAME).strip(),
+                                ZONE_COLOR: zone_int_colors,
+                                ZONE_DISPLAY: user_input.get(ZONE_DISPLAY),
                             }
 
             if not errors:
@@ -259,10 +280,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         sel_zone_coordinates = str_zone
 
+        display_zone = sel_zone.get(ZONE_DISPLAY, False)
+        display_color = sel_zone.get(ZONE_COLOR, "255,255,255")
+
         data_schema = vol.Schema(
             {
                 vol.Required(ZONE_NAME, default=sel_zone_name): str,
                 vol.Required(ZONE_COORD, default=sel_zone_coordinates): str,
+                vol.Required(ZONE_DISPLAY, default=display_zone): bool,
+                vol.Required(ZONE_COLOR, default=display_color): str,
                 vol.Required(ZONE_DEL, default=False): bool,
             }
         )
@@ -357,6 +383,5 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def _update_options(self):
         """Update config entry options."""
-
         self.user_input[CONF_ZONES] = json.dumps(self.user_input.get(CONF_ZONES, {}))
         return self.async_create_entry(title="", data=self.user_input)

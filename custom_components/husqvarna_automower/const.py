@@ -45,6 +45,8 @@ MAP_IMG_PATH = "map_img_path"
 CONF_ZONES = "configured_zones"
 ZONE_COORD = "zone_coordinates"
 ZONE_NAME = "name"
+ZONE_DISPLAY = "display"
+ZONE_COLOR = "color"
 ZONE_DEL = "delete"
 ZONE_SEL = "selected_zone"
 ZONE_NEW = "new"
@@ -225,6 +227,5 @@ WEEKDAYS = (
     "saturday",
     "sunday",
 )
-
 
 LAT_LON_BOUNDS = Polygon.from_bounds(xmin=-90.0, ymin=-180.0, xmax=90.0, ymax=180.0)
