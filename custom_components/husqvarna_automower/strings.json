@@ -33,6 +33,7 @@
             "name": "Zone Name",
             "zone_coordinates": "Zone Coordinates lat,long;lat,long...",
             "display": "Show zone on map camera",
+            "color": "Zone RGB color",
             "delete": "Delete this zone"
             },
             "description": "Configure Zone",
