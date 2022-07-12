@@ -15,7 +15,6 @@ class LatLon:
         return LAT_LON_BOUNDS.intersects(self.point)
 
 
-
 class ValidatePointString:
     def __init__(self, point_string: str) -> None:
         self.point_str = point_string
@@ -45,4 +44,3 @@ class ValidatePointString:
     @property
     def point(self) -> Point:
         return self.coord.point
-
