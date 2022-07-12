@@ -1,8 +1,11 @@
 # Home Assistant integration for Husqvarna Automower
 
-![Maintenance](https://img.shields.io/maintenance/yes/2022.svg)
-[![buy me a coffee](https://img.shields.io/badge/If%20you%20like%20it-Buy%20me%20a%20coffee-orange.svg)](https://www.buymeacoffee.com/Thomas55555)
-[![downloads](https://img.shields.io/github/downloads/Thomas55555/husqvarna_automower/total.svg)](https://img.shields.io/github/downloads/Thomas55555/husqvarna_automower/total.svg)
+# This fork varies from @Thomas55555 as follows
+
+- Adds a zone sensor to track the zone the mower is in.  This is configurable and supports polygon zones.
+- Uses a binary error sensor that has an error number and state for attributes.
+- Better mower location icon
+- Allows setting a home position, this is where the mower charger is located, when the mower is home the location of the zone will indicate home and the map camera will show the mower at the charger instead of it's reported position.
 
 Custom component to support Automower.
 
@@ -26,7 +29,7 @@ need a API key to use this integration, refer to [this
 guide](https://developer.husqvarnagroup.cloud/docs/get-started) on how to
 get one.
 
-![Screenshot of the integration](https://github.com/Thomas55555/husqvarna_automower/blob/main/screenshot_husqvarna_automower.PNG)
+![Screenshot of the integration](/images/screenshot_husqvarna_automower.png)
 
 ## Supported devices
 
@@ -95,11 +98,22 @@ You will be re-directed to the Husqvarna site and have to login there with usern
 
 ### Configuring the camera sensor
 
+![Example of camera](/images/map_camera.png)
+
 The optional camera entity is disabled by default.  The camera entity will plot the current coordinates and location history of the mower on a user provided image. To configure the entity you need to upload your desired map image and determine the coordinates of the top left corner and the bottom right corner of your selected image.
 
 The camera entity is configured via the configure option on the integration. To enter the coordinates, ensure that they are in Signed Degree format and separated by a comma for example (40.689209, -74.044661)
 
 You can then provide the path to the image you would like to use for the map and mower, this has been tested with the PNG format, other formats may work.
+
+
+### Configuring the zone sensor
+
+The optional zone sensor allows zones to be designated by coorinates, this sensor will then return the name of the zone the mower is currently located.
+
+To create a Zone, select new then enter a name for the zone and the coordinates of the zone.  Coordinates are entered in Signed Degree format with latitude and lognitude seperated by a comma and each coordinate seperated by a semi colon. You must enter at least three coordinates to define a zone. For example: ```40.689209, -74.044661; 40.689210, -74.044652; 40.689211, -74.044655``` You must select save and then submit, exiting the flow in another manner will cause any entered zones to be lost.
+
+If a Home Zone is set, the sensor will return Home and the camera will display the mower at the home location, when the mower is charging or at the docking station.
 
 ## Usage
 

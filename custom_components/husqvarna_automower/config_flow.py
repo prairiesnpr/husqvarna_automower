@@ -1,6 +1,7 @@
 """Config flow to add the integration via the UI."""
 import logging
 import os
+import json
 
 import voluptuous as vol
 
@@ -18,6 +19,13 @@ from .const import (
     GPS_TOP_LEFT,
     MAP_IMG_PATH,
     MOWER_IMG_PATH,
+    CONF_ZONES,
+    ZONE_COORD,
+    ZONE_NAME,
+    ZONE_DEL,
+    ZONE_SEL,
+    ZONE_NEW,
+    ZONE_FINISH,
     HOME_LOCATION,
 )
 
@@ -103,6 +111,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         self.user_input = dict(config_entry.options)
 
+        if self.user_input.get(CONF_ZONES, False):
+            self.user_input[CONF_ZONES] = json.loads(self.user_input[CONF_ZONES])
+
+        self.configured_zones = self.user_input.get(CONF_ZONES, {})
+
+
         self.camera_enabled = self.user_input.get(ENABLE_CAMERA, False)
         self.map_top_left_coord = self.user_input.get(GPS_TOP_LEFT, "")
         if self.map_top_left_coord != "":
@@ -137,7 +151,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Select Configuration Item."""
         return self.async_show_menu(
             step_id="select",
-            menu_options=["camera_init", "home_init"],
+            menu_options=["geofence_init", "camera_init", "home_init"],
         )
 
     async def async_step_home_init(self, user_input=None):
@@ -164,6 +178,99 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="home_init", data_schema=data_schema, errors=errors
         )
+
+ def async_step_geofence_init(self, user_input=None):
+        """Configure the geofence"""
+
+        if user_input:
+            self.sel_zone_id = user_input.get(ZONE_SEL, ZONE_NEW)
+            if self.sel_zone_id == ZONE_FINISH:
+                return await self._update_options()
+
+            return await self.async_step_zone_edit()
+
+        configured_zone_keys = [ZONE_NEW, ZONE_FINISH] + list(
+            self.configured_zones.keys()
+        )
+        data_schema = {}
+        data_schema[ZONE_SEL] = selector(
+            {
+                "select": {
+                    "options": configured_zone_keys,
+                }
+            }
+        )
+        return self.async_show_form(
+            step_id="geofence_init", data_schema=vol.Schema(data_schema)
+        )
+
+    async def async_step_zone_edit(self, user_input=None):
+        """Update the selected zone configuration."""
+        errors = {}
+
+        if user_input:
+            if user_input.get(ZONE_DEL) is True:
+                self.configured_zones.pop(self.sel_zone_id, None)
+            else:
+                zone_coord = []
+                if user_input.get(ZONE_COORD):
+                    for coord in user_input.get(ZONE_COORD).split(";"):
+                        if coord != "":
+                            pnt_validator = ValidatePointString(coord)
+                            pnt_valid, pnt_error = pnt_validator.is_valid()
+
+                            if pnt_valid:
+                                zone_coord.append(
+                                    (pnt_validator.point.x, pnt_validator.point.y)
+                                )
+                            else:
+                                errors[ZONE_COORD] = pnt_error
+                                break
+
+                    if not errors:
+                        if self.sel_zone_id == ZONE_NEW:
+                            self.sel_zone_id = (
+                                user_input.get(ZONE_NAME)
+                                .lower()
+                                .strip()
+                                .replace(" ", "_")
+                            )
+
+                        if len(zone_coord) < 4:
+                            errors[ZONE_COORD] = "too_few_points"
+                        else:
+                            self.configured_zones[self.sel_zone_id] = {
+                                ZONE_COORD: zone_coord,
+                                ZONE_NAME: user_input.get(ZONE_NAME).strip(),
+                            }
+
+            if not errors:
+                self.user_input.update({CONF_ZONES: self.configured_zones})
+                return await self.async_step_geofence_init()
+
+        sel_zone = self.configured_zones.get(self.sel_zone_id, {})
+        current_coordinates = sel_zone.get(ZONE_COORD, "")
+
+        str_zone = ""
+        sel_zone_name = sel_zone.get(ZONE_NAME, "")
+
+        for coord in current_coordinates:
+            str_zone += ",".join([str(x) for x in coord])
+            str_zone += ";"
+
+        sel_zone_coordinates = str_zone
+
+        data_schema = vol.Schema(
+            {
+                vol.Required(ZONE_NAME, default=sel_zone_name): str,
+                vol.Required(ZONE_COORD, default=sel_zone_coordinates): str,
+                vol.Required(ZONE_DEL, default=False): bool,
+            }
+        )
+        return self.async_show_form(
+            step_id="zone_edit", data_schema=data_schema, errors=errors
+        )
+
 
     async def async_step_camera_init(self, user_input=None):
         """Enable / Disable the camera."""
@@ -252,4 +359,5 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def _update_options(self):
         """Update config entry options."""
+        self.user_input[CONF_ZONES] = json.dumps(self.user_input.get(CONF_ZONES, {}))
         return self.async_create_entry(title="", data=self.user_input)
