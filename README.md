@@ -104,7 +104,7 @@ You will be re-directed to the Husqvarna site and have to login there with usern
 ![Example of camera](/images/map_camera.png)
 
 #### Example of map camera with zones enabled
-![Example of camera with zones enabled](/images/map_camera.png)
+![Example of camera with zones enabled](/images/map_camera_zone.png)
 
 The optional camera entity is disabled by default.  The camera entity will plot the current coordinates and location history of the mower on a user provided image. To configure the entity you need to upload your desired map image and determine the coordinates of the top left corner and the bottom right corner of your selected image.
 
