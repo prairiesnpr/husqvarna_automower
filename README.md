@@ -100,7 +100,11 @@ You will be re-directed to the Husqvarna site and have to login there with usern
 
 ### Configuring the camera sensor
 
+#### Example of map camera
 ![Example of camera](/images/map_camera.png)
+
+#### Example of map camera with zones enabled
+![Example of camera with zones enabled](/images/map_camera_zone.png)
 
 The optional camera entity is disabled by default.  The camera entity will plot the current coordinates and location history of the mower on a user provided image. To configure the entity you need to upload your desired map image and determine the coordinates of the top left corner and the bottom right corner of your selected image.
 
@@ -108,12 +112,16 @@ The camera entity is configured via the configure option on the integration. To 
 
 You can then provide the path to the image you would like to use for the map and mower, this has been tested with the PNG format, other formats may work.
 
+The path color can be changes by providing an RGB value such as (255,0,0).
+
 
 ### Configuring the zone sensor
 
 The optional zone sensor allows zones to be designated by coorinates, this sensor will then return the name of the zone the mower is currently located.
 
 To create a Zone, select new then enter a name for the zone and the coordinates of the zone.  Coordinates are entered in Signed Degree format with latitude and lognitude seperated by a comma and each coordinate seperated by a semi colon. You must enter at least three coordinates to define a zone. For example: ```40.689209, -74.044661; 40.689210, -74.044652; 40.689211, -74.044655``` You must select save and then submit, exiting the flow in another manner will cause any entered zones to be lost.
+
+If disaplay zone is selected the zone will be drawn as an overlay on the map camera in the provided RGB color.  To change the color provide an RGB string such as (255,255,255).
 
 If a Home Zone is set, the sensor will return Home and the camera will display the mower at the home location, when the mower is charging or at the docking station.
 
