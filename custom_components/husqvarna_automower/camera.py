@@ -129,7 +129,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
             (mower_img_w, hsize), Image.ANTIALIAS
         )
 
-    def _overlay_zones(self):
+    def _overlay_zones(self) -> None:
         """Draw zone overlays."""
         zones = json.loads(self.entry.options.get(CONF_ZONES, "{}"))
 
@@ -155,19 +155,19 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
                 )
                 self._map_image.paste(poly_img, mask=poly_img)
 
-    def _image_to_bytes(self):
+    def _image_to_bytes(self) -> None:
         """Convert image to byte array."""
         img_byte_arr = io.BytesIO()
         self._image.save(img_byte_arr, format="PNG")
         self._image_bytes = img_byte_arr.getvalue()
 
-    def turn_on(self):
+    def turn_on(self) -> None:
         """Turn the camera on."""
         self.session.register_data_callback(
             lambda data: self._generate_image(data), schedule_immediately=True
         )
 
-    def turn_off(self):
+    def turn_off(self) -> None:
         """Turn the camera off."""
         self.session.unregister_data_callback(lambda data: self._generate_image(data))
 
@@ -176,9 +176,11 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         """Show supported features."""
         return CameraEntityFeature.ON_OFF
 
-    def _generate_image(self, data: dict):
+    def _generate_image(self, data: dict) -> None:
         """Generate the image."""
         position_history = AutomowerEntity.get_mower_attributes(self)["positions"]
+        map_image = self._map_image.copy()
+
         if self._is_home and self.home_location:
             location = self.home_location
         else:
@@ -193,9 +195,9 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
             self._position_history = position_history
 
         x1, y1 = self._scale_to_img(
-            location, (self._map_image.size[0], self._map_image.size[1])
+            location, (map_image.size[0], map_image.size[1])
         )
-        img_draw = ImageDraw.Draw(self._map_image)
+        img_draw = ImageDraw.Draw(map_image)
 
         for i in range(len(position_history) - 1, 0, -1):
             point_1 = (
@@ -203,14 +205,14 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
                 position_history[i]["longitude"],
             )
             scaled_loc_1 = self._scale_to_img(
-                point_1, (self._map_image.size[0], self._map_image.size[1])
+                point_1, (map_image.size[0], map_image.size[1])
             )
             point_2 = (
                 position_history[i - 1]["latitude"],
                 position_history[i - 1]["longitude"],
             )
             scaled_loc_2 = self._scale_to_img(
-                point_2, (self._map_image.size[0], self._map_image.size[1])
+                point_2, (map_image.size[0], map_image.size[1])
             )
             plot_points = self._find_points_on_line(scaled_loc_1, scaled_loc_2)
             for p in range(0, len(plot_points) - 1, 2):
@@ -222,7 +224,6 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
 
         img_w, img_h = self._overlay_image.size
 
-        map_image = self._map_image.copy()
         map_image.paste(
             self._overlay_image, (x1 - img_w // 2, y1 - img_h), self._overlay_image
         )
