@@ -33,7 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="cuttingBladeUsageTime",
-        name="Cutting Blade Usage Time",
+        name="Cutting blade usage time",
         icon="mdi:clock-outline",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -43,7 +43,7 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     ),
     SensorEntityDescription(
         key="totalChargingTime",
-        name="Total Charging Time",
+        name="Total charging time",
         icon="mdi:clock-outline",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -53,7 +53,7 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     ),
     SensorEntityDescription(
         key="totalCuttingTime",
-        name="Total Cutting Time",
+        name="Total cutting time",
         icon="mdi:clock-outline",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -63,7 +63,7 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     ),
     SensorEntityDescription(
         key="totalRunningTime",
-        name="Total Running Time",
+        name="Total running time",
         icon="mdi:clock-outline",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -73,7 +73,7 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     ),
     SensorEntityDescription(
         key="totalSearchingTime",
-        name="Total Searching Time",
+        name="Total searching time",
         icon="mdi:clock-outline",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -83,7 +83,7 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     ),
     SensorEntityDescription(
         key="numberOfChargingCycles",
-        name="Number Of Charging Cycles",
+        name="Number of charging cycles",
         icon="mdi:battery-sync-outline",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -91,7 +91,7 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     ),
     SensorEntityDescription(
         key="numberOfCollisions",
-        name="Number Of Collisions",
+        name="Number of collisions",
         icon="mdi:counter",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -103,7 +103,7 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
 PERCENTAGE_SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="totalSearchingTime",
-        name="Searching Time Percent",
+        name="Searching time percent",
         icon="mdi:percent",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -112,7 +112,7 @@ PERCENTAGE_SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     ),
     SensorEntityDescription(
         key="totalCuttingTime",
-        name="Cutting Time Percent",
+        name="Cutting time percent",
         icon="mdi:percent",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -215,11 +215,11 @@ class AutomowerProblemSensor(SensorEntity, AutomowerEntity):
     """Defining the AutomowerProblemSensor Entity."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_name = "Problem sensor"
 
     def __init__(self, session, idx):
         """Set up AutomowerProblemSensor."""
         super().__init__(session, idx)
-        self._attr_name = f"{self.mower_name} Problem Sensor"
         self._attr_unique_id = f"{self.mower_id}_problem_sensor"
 
     @property
@@ -257,11 +257,11 @@ class AutomowerBatterySensor(SensorEntity, AutomowerEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_device_class = SensorDeviceClass.BATTERY
+    _attr_name = "Battery level"
 
     def __init__(self, session, idx):
         """Set up AutomowerBatterySensor."""
         super().__init__(session, idx)
-        self._attr_name = f"{self.mower_name} Battery Level"
         self._attr_unique_id = f"{self.mower_id}_battery_level"
 
     @property
@@ -275,11 +275,11 @@ class AutomowerNextStartSensor(SensorEntity, AutomowerEntity):
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_name = "Next start"
 
     def __init__(self, session, idx):
         """Set up AutomowerNextStartSensor."""
         super().__init__(session, idx)
-        self._attr_name = f"{self.mower_name} Next Start"
         self._attr_unique_id = f"{self.mower_id}_next_start"
 
     @property
@@ -300,11 +300,11 @@ class AutomowerModeSensor(SensorEntity, AutomowerEntity):
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
+    _attr_name = "Mode"
 
     def __init__(self, session, idx):
         """Set up AutomowerModeSensor."""
         super().__init__(session, idx)
-        self._attr_name = f"{self.mower_name} Mode"
         self._attr_unique_id = f"{self.mower_id}_mode"
 
     @property
@@ -321,7 +321,7 @@ class AutomowerStatisticsSensor(SensorEntity, AutomowerEntity):
         """Set up AutomowerStatisticsSensors."""
         super().__init__(session, idx)
         self.entity_description = description
-        self._attr_name = f"{self.mower_name} {description.name}"
+        self._attr_name = description.name
         self._attr_unique_id = f"{self.mower_id}_{description.key}"
 
     @property
@@ -338,7 +338,7 @@ class AutomowerStatisticsPercentageSensor(SensorEntity, AutomowerEntity):
         """AutomowerStatisticsPercentageSensors."""
         super().__init__(session, idx)
         self.entity_description = description
-        self._attr_name = f"{self.mower_name} {description.name}"
+        self._attr_name = description.name
         self._attr_unique_id = f"{self.mower_id}_{description.key}_percentage"
 
     @property
