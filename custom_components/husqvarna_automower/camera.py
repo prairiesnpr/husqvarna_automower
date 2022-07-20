@@ -5,6 +5,7 @@ import logging
 import math
 import json
 from typing import Optional
+from datetime import datetime
 
 from PIL import Image, ImageDraw
 import numpy as np
@@ -71,6 +72,9 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         self._map_image = None
         self._overlay_image = None
         self._path_color = self.entry.options.get(MAP_PATH_COLOR, [255, 0, 0])
+        self._last_update = None
+        self._update_frequency = 0
+        self._avg_update_frequency = 0
 
         self.session = session
 
@@ -176,8 +180,19 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         """Show supported features."""
         return CameraEntityFeature.ON_OFF
 
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return the extra state attributes of this map camera."""
+        return {"update_frequency_seconds": self._update_frequency,
+                "average_update_freq_sec": self._avg_update_frequency}
+
     def _generate_image(self, data: dict) -> None:
         """Generate the image."""
+        if self._last_update:
+            self._update_frequency = (datetime.now() - self._last_update).seconds
+            self._avg_update_frequency = (self._avg_update_frequency + self._update_frequency)/2        
+        self._last_update = datetime.now()
+
         position_history = AutomowerEntity.get_mower_attributes(self)["positions"]
         map_image = self._map_image.copy()
 
