@@ -183,9 +183,11 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
     @property
     def extra_state_attributes(self) -> dict:
         """Return the extra state attributes of this map camera."""
-        return {"update_frequency_seconds": self._update_frequency,
-                "average_update_freq_sec": self._avg_update_frequency,
-                "last_update": self._last_update}
+        return {
+            "update_frequency_seconds": self._update_frequency,
+            "average_update_freq_sec": self._avg_update_frequency,
+            "last_update": self._last_update,
+        }
 
     def _generate_image(self, data: dict) -> None:
         """Generate the image."""
@@ -193,7 +195,9 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
             update_frequency = (datetime.now() - self._last_update).seconds
             if update_frequency > 0:
                 self._update_frequency = update_frequency
-                self._avg_update_frequency = (self._avg_update_frequency + self._update_frequency)/2
+                self._avg_update_frequency = (
+                    self._avg_update_frequency + self._update_frequency
+                ) / 2
             else:
                 return
 
@@ -215,9 +219,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         else:
             self._position_history = position_history
 
-        x1, y1 = self._scale_to_img(
-            location, (map_image.size[0], map_image.size[1])
-        )
+        x1, y1 = self._scale_to_img(location, (map_image.size[0], map_image.size[1]))
         img_draw = ImageDraw.Draw(map_image)
 
         for i in range(len(position_history) - 1, 0, -1):
