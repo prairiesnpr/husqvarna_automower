@@ -93,26 +93,10 @@ class AutomowerCalendar(CalendarEntity, AutomowerEntity):
                     )
                     if self._event.start < self._next_event.start:
                         self._next_event = self._event
-                        _LOGGER.debug("self._next_event %s", self._next_event)
 
                     event_list.append(self._event)
 
         return event_list, self._next_event
-
-    @property
-    def name(self) -> str:
-        """Return the name of the entity."""
-        return f"{self.mower_name}"
-
-    @property
-    def unique_id(self) -> str:
-        """Return a unique identifier for this entity."""
-        return f"{self.mower_id}_calendar"
-
-    @property
-    def entity_category(self) -> EntityCategory:
-        """Return a unique identifier for this entity."""
-        return EntityCategory.DIAGNOSTIC
 
     async def async_get_events(
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
