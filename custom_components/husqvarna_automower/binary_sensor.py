@@ -20,18 +20,18 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up select platform."""
-    session = hass.data[DOMAIN][entry.entry_id]
+    coordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
-        AutomowerBatteryChargingBinarySensor(session, idx)
-        for idx, ent in enumerate(session.data["data"])
+        AutomowerBatteryChargingBinarySensor(coordinator, idx)
+        for idx, ent in enumerate(coordinator.session.data["data"])
     )
     async_add_entities(
-        AutomowerLeavingDockBinarySensor(session, idx)
-        for idx, ent in enumerate(session.data["data"])
+        AutomowerLeavingDockBinarySensor(coordinator, idx)
+        for idx, ent in enumerate(coordinator.session.data["data"])
     )
     async_add_entities(
-        AutomowerErrorBinarySensor(session, idx)
-        for idx, ent in enumerate(session.data["data"])
+        AutomowerErrorBinarySensor(coordinator, idx)
+        for idx, ent in enumerate(coordinator.session.data["data"])
     )
 
 

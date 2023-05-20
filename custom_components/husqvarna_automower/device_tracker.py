@@ -1,6 +1,7 @@
 """Platform for Husqvarna Automower device tracker integration."""
-from homeassistant.components.device_tracker import SourceType
-from homeassistant.components.device_tracker.config_entry import TrackerEntity
+import logging
+
+from homeassistant.components.device_tracker import SourceType, TrackerEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -8,14 +9,17 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN
 from .entity import AutomowerEntity
 
+_LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up device_tracker platform."""
-    session = hass.data[DOMAIN][entry.entry_id]
+    coordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
-        AutomowerTracker(session, idx) for idx, ent in enumerate(session.data["data"])
+        AutomowerTracker(coordinator, idx)
+        for idx, ent in enumerate(coordinator.session.data["data"])
     )
 
 
@@ -28,7 +32,7 @@ class AutomowerTracker(TrackerEntity, AutomowerEntity):
         self._attr_unique_id = f"{self.mower_id}_dt"
 
     @property
-    def source_type(self) -> str:
+    def source_type(self) -> SourceType:
         """Return the source type, eg gps or router, of the device."""
         return SourceType.GPS
 
