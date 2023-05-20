@@ -11,17 +11,18 @@ ISSUE_URL = "https://github.com/Thomas55555/husqvarna_automower"
 HUSQVARNA_URL = "https://developer.husqvarnagroup.cloud/login"
 OAUTH2_AUTHORIZE = "https://api.authentication.husqvarnagroup.dev/v1/oauth2/authorize"
 OAUTH2_TOKEN = "https://api.authentication.husqvarnagroup.dev/v1/oauth2/token"
+DISABLE_LE = "disable_le"
 
 # Platforms
 PLATFORMS = [
-    Platform.DEVICE_TRACKER,
-    Platform.VACUUM,
-    Platform.SELECT,
-    Platform.NUMBER,
-    Platform.CALENDAR,
-    Platform.SENSOR,
     Platform.BINARY_SENSOR,
+    Platform.CALENDAR,
     Platform.CAMERA,
+    Platform.DEVICE_TRACKER,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.VACUUM,
 ]
 
 # Configuration and options
@@ -42,6 +43,7 @@ MOWER_IMG_PATH = "mower_img_path"
 MAP_IMG_PATH = "map_img_path"
 MAP_PATH_COLOR = "map_path_color"
 
+
 # Zone configuration
 CONF_ZONES = "configured_zones"
 ZONE_COORD = "zone_coordinates"
@@ -53,6 +55,7 @@ ZONE_SEL = "selected_zone"
 ZONE_NEW = "new"
 ZONE_ID = "zone_id"
 ZONE_FINISH = "save"
+LAT_LON_BOUNDS = Polygon.from_bounds(xmin=-90.0, ymin=-180.0, xmax=90.0, ymax=180.0)
 
 
 # Defaults
@@ -133,7 +136,7 @@ ERRORCODES = {
     59: "Temporary battery problem",
     60: "Temporary battery problem",
     61: "Temporary battery problem",
-    62: "Temporary battery problem",
+    62: "Battery restriction due to ambient temperature",
     63: "Temporary battery problem",
     64: "Temporary battery problem",
     65: "Temporary battery problem",
@@ -229,9 +232,22 @@ WEEKDAYS = (
     "sunday",
 )
 
-LAT_LON_BOUNDS = Polygon.from_bounds(xmin=-90.0, ymin=-180.0, xmax=90.0, ymax=180.0)
+
+WEEKDAYS_TO_RFC5545 = {
+    "monday": "MO",
+    "tuesday": "TU",
+    "wednesday": "WE",
+    "thursday": "TH",
+    "friday": "FR",
+    "saturday": "SA",
+    "sunday": "SU",
+}
+
+
 # Models that support electronic cutting height
 ELECTRONIC_CUTTING_HEIGHT_SUPPORT = [
+    "320",
+    "330",
     "405",
     "415",
     "420",

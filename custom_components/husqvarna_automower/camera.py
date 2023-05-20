@@ -10,7 +10,7 @@ from datetime import datetime
 from PIL import Image, ImageDraw
 import numpy as np
 
-from homeassistant.components.camera import CameraEntityFeature, Camera
+from homeassistant.components.camera import SUPPORT_ON_OFF, Camera
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -43,11 +43,12 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up select platform."""
-    session = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        AutomowerCamera(session, idx, entry)
-        for idx, ent in enumerate(session.data["data"])
-    )
+    coordinator = hass.data[DOMAIN][entry.entry_id]
+    if entry.options.get(ENABLE_CAMERA):
+        async_add_entities(
+            AutomowerCamera(coordinator, idx, entry)
+            for idx, ent in enumerate(coordinator.session.data["data"])
+        )
 
 
 class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
@@ -57,7 +58,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
     _attr_frame_interval: float = 300
     _attr_name = "Map"
 
-    def __init__(self, session, idx, entry):
+    def __init__(self, session, idx, entry) -> None:
         """Initialize AutomowerCamera."""
         Camera.__init__(self)
         AutomowerEntity.__init__(self, session, idx)
@@ -84,7 +85,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
             self._load_map_image()
             self._load_mower_image()
             self._overlay_zones()
-            self.session.register_data_callback(
+            self.coordinator.session.register_data_callback(
                 lambda data: self._generate_image(data), schedule_immediately=True
             )
         else:
@@ -114,7 +115,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
     async def async_camera_image(
         self, width: Optional[int] = None, height: Optional[int] = None
     ) -> Optional[bytes]:
-        """Return the caerma image."""
+        """Return the camera image."""
         return self._image_bytes
 
     def _load_map_image(self):
@@ -159,35 +160,26 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
                 )
                 self._map_image.paste(poly_img, mask=poly_img)
 
-    def _image_to_bytes(self) -> None:
-        """Convert image to byte array."""
+    def _image_to_bytes(self):
         img_byte_arr = io.BytesIO()
         self._image.save(img_byte_arr, format="PNG")
         self._image_bytes = img_byte_arr.getvalue()
 
-    def turn_on(self) -> None:
+    def turn_on(self):
         """Turn the camera on."""
         self.session.register_data_callback(
             lambda data: self._generate_image(data), schedule_immediately=True
         )
 
-    def turn_off(self) -> None:
+    def turn_off(self):
         """Turn the camera off."""
-        self.session.unregister_data_callback(lambda data: self._generate_image(data))
+        pass
+        # self.session.unregister_data_callback(lambda data: self._generate_image(data))
 
     @property
     def supported_features(self) -> int:
         """Show supported features."""
-        return CameraEntityFeature.ON_OFF
-
-    @property
-    def extra_state_attributes(self) -> dict:
-        """Return the extra state attributes of this map camera."""
-        return {
-            "update_frequency_seconds": self._update_frequency,
-            "average_update_freq_sec": self._avg_update_frequency,
-            "last_update": self._last_update,
-        }
+        return SUPPORT_ON_OFF
 
     def _generate_image(self, data: dict) -> None:
         """Generate the image."""
@@ -256,7 +248,6 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
     def _find_points_on_line(
         self, point_1: ImgPoint, point_2: ImgPoint
     ) -> list[ImgPoint]:
-        """Find points on a line."""
         dash_length = 10
         line_length = math.sqrt(
             (point_2[0] - point_1[0]) ** 2 + (point_2[1] - point_1[1]) ** 2
@@ -275,7 +266,6 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
     def _get_point_on_vector(
         self, initial_pt: ImgPoint, terminal_pt: ImgPoint, distance: int
     ) -> ImgPoint:
-        """Get points on a vector."""
         v = np.array(initial_pt, dtype=float)
         u = np.array(terminal_pt, dtype=float)
         n = v - u

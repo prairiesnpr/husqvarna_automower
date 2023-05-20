@@ -1,20 +1,70 @@
 """The Husqvarna Automower integration."""
 import logging
 
-import voluptuous as vol
-
 import aioautomower
+from asyncio.exceptions import TimeoutError
 from homeassistant.components.application_credentials import DATA_STORAGE
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_TOKEN, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.typing import ConfigType
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers.config_entry_oauth2_flow import (
+    async_get_config_entry_implementation,
+)
+from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue
 
-from .const import DOMAIN, PLATFORMS, STARTUP_MESSAGE
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from .const import DOMAIN, PLATFORMS, STARTUP_MESSAGE, DISABLE_LE
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class AutomowerDataUpdateCoordinator(DataUpdateCoordinator[None]):
+    """Class to manage fetching Husqvarna data."""
+
+    def __init__(self, hass: HomeAssistant, *, entry: ConfigEntry) -> None:
+        """Initialize data updater."""
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=DOMAIN,
+        )
+        api_key = None
+        ap_storage = hass.data.get("application_credentials")[DATA_STORAGE]
+        ap_storage_data = ap_storage.__dict__["data"]
+        for k in ap_storage_data:
+            api_key = ap_storage_data[k]["client_id"]
+        access_token = entry.data.get(CONF_TOKEN)
+        if not "amc:api" in access_token["scope"]:
+            async_create_issue(
+                hass,
+                DOMAIN,
+                "wrong_scope",
+                is_fixable=False,
+                severity=IssueSeverity.WARNING,
+                translation_key="wrong_scope",
+            )
+        low_energy = not entry.options.get(DISABLE_LE)
+        self.session = aioautomower.AutomowerSession(api_key, access_token, low_energy)
+        self.session.register_token_callback(
+            lambda token: hass.config_entries.async_update_entry(
+                entry,
+                data={"auth_implementation": DOMAIN, CONF_TOKEN: token},
+            )
+        )
+
+    async def _async_update_data(self) -> None:
+        """Fetch data from Husqvarna."""
+        try:
+            await self.session.connect()
+        except TimeoutError as error:
+            _LOGGER.debug("Asyncio timeout: %s", error)
+            raise ConfigEntryNotReady from error
+        except Exception as error:
+            _LOGGER.debug("Exception in async_setup_entry: %s", error)
+            # If we haven't used the refresh_token (ie. been offline) for 10 days,
+            # we need to login using username and password in the config flow again.
+            raise ConfigEntryAuthFailed from Exception
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -22,29 +72,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
         _LOGGER.info(STARTUP_MESSAGE)
-    api_key = None
-    ap_storage = hass.data.get("application_credentials")[DATA_STORAGE]
-    ap_storage_data = ap_storage.__dict__["data"]
-    for k in ap_storage_data:
-        api_key = ap_storage_data[k]["client_id"]
-    access_token = entry.data.get(CONF_TOKEN)
-    session = aioautomower.AutomowerSession(api_key, access_token)
-    session.register_token_callback(
-        lambda token: hass.config_entries.async_update_entry(
-            entry,
-            data={CONF_TOKEN: token},
-        )
+    coordinator = AutomowerDataUpdateCoordinator(
+        hass,
+        entry=entry,
     )
+    await coordinator.async_config_entry_first_refresh()
 
-    try:
-        await session.connect()
-    except Exception:
-        # If we haven't used the refresh_token (ie. been offline) for 10 days,
-        # we need to login using username and password in the config flow again.
-        raise ConfigEntryAuthFailed from Exception
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    hass.data[DOMAIN][entry.entry_id] = session
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(update_listener))
     return True
 
@@ -70,5 +107,5 @@ async def update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
         entry, [Platform.CAMERA]
     )
     if unload_ok:
-        hass.config_entries.async_setup_platforms(entry, [Platform.CAMERA])
+        await hass.config_entries.async_forward_entry_setups(entry, [Platform.CAMERA])
         entry.async_on_unload(entry.add_update_listener(update_listener))

@@ -16,6 +16,7 @@ from .map_utils import ValidateRGB
 
 from .const import (
     DOMAIN,
+    DISABLE_LE,
     ENABLE_CAMERA,
     GPS_BOTTOM_RIGHT,
     GPS_TOP_LEFT,
@@ -114,40 +115,47 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.base_path = os.path.dirname(__file__)
         self.config_entry = config_entry
 
-        self.user_input = dict(config_entry.options)
+        if self.config_entry.options.get(CONF_ZONES, False):
+            self.configured_zones = json.loads(self.config_entry.options[CONF_ZONES])
+        else:
+            self.configured_zones = {}
 
-        if self.user_input.get(CONF_ZONES, False):
-            self.user_input[CONF_ZONES] = json.loads(self.user_input[CONF_ZONES])
+        # self.configured_zones = self.config_entry.options.get(CONF_ZONES, {})
 
-        self.configured_zones = self.user_input.get(CONF_ZONES, {})
-
-        self.camera_enabled = self.user_input.get(ENABLE_CAMERA, False)
-        self.map_top_left_coord = self.user_input.get(GPS_TOP_LEFT, "")
+        self.camera_enabled = self.config_entry.options.get(ENABLE_CAMERA, False)
+        self.disable_le = self.config_entry.options.get(DISABLE_LE, True)
+        self.map_top_left_coord = self.config_entry.options.get(GPS_TOP_LEFT, "")
         if self.map_top_left_coord != "":
             self.map_top_left_coord = ",".join(
                 [str(x) for x in self.map_top_left_coord]
             )
 
-        self.map_bottom_right_coord = self.user_input.get(GPS_BOTTOM_RIGHT, "")
+        self.map_bottom_right_coord = self.config_entry.options.get(
+            GPS_BOTTOM_RIGHT, ""
+        )
         if self.map_bottom_right_coord != "":
             self.map_bottom_right_coord = ",".join(
                 [str(x) for x in self.map_bottom_right_coord]
             )
 
-        self.mower_image_path = self.user_input.get(
+        self.mower_image_path = self.config_entry.options.get(
             MOWER_IMG_PATH, os.path.join(self.base_path, "resources/mower.png")
         )
-        self.map_img_path = self.user_input.get(
+        self.map_img_path = self.config_entry.options.get(
             MAP_IMG_PATH, os.path.join(self.base_path, "resources/map_image.png")
         )
+        self.path_int_colors = self.config_entry.options.get(
+            MAP_PATH_COLOR, [255, 0, 0]
+        )
 
-        self.path_int_colors = self.user_input.get(MAP_PATH_COLOR, [255, 0, 0])
-
-        self.home_location = self.user_input.get(HOME_LOCATION, "")
+        self.home_location = self.config_entry.options.get(HOME_LOCATION, "")
         if self.home_location != "":
             self.home_location = ",".join([str(x) for x in self.home_location])
 
         self.sel_zone_id = None
+
+        self.options = self.config_entry.options.copy()
+        self.options[CONF_ZONES] = self.configured_zones
 
     async def async_step_init(self, user_input=None):
         """Manage option flow."""
@@ -157,7 +165,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Select Configuration Item."""
         return self.async_show_menu(
             step_id="select",
-            menu_options=["geofence_init", "camera_init", "home_init"],
+            menu_options=["le_init", "geofence_init", "camera_init", "home_init"],
         )
 
     async def async_step_home_init(self, user_input=None):
@@ -169,11 +177,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 pnt_valid, pnt_error = pnt_validator.is_valid()
 
                 if pnt_valid:
-                    self.user_input[HOME_LOCATION] = [
+                    self.options[HOME_LOCATION] = [
                         pnt_validator.point.x,
                         pnt_validator.point.y,
                     ]
-                    return await self._update_options()
+                    return await self._update_config()
                 errors[HOME_LOCATION] = pnt_error
 
         data_schema = vol.Schema(
@@ -190,7 +198,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input:
             self.sel_zone_id = user_input.get(ZONE_SEL, ZONE_NEW)
             if self.sel_zone_id == ZONE_FINISH:
-                return await self._update_options()
+                return await self._update_config()
 
             return await self.async_step_zone_edit()
 
@@ -261,7 +269,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             }
 
             if not errors:
-                self.user_input.update({CONF_ZONES: self.configured_zones})
+                self.options.update({CONF_ZONES: self.configured_zones})
                 return await self.async_step_geofence_init()
 
         sel_zone = self.configured_zones.get(self.sel_zone_id, {})
@@ -277,7 +285,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         sel_zone_coordinates = str_zone
 
         display_zone = sel_zone.get(ZONE_DISPLAY, False)
-        display_color = sel_zone.get(ZONE_COLOR, "255,255,255")
+        display_color = sel_zone.get(ZONE_COLOR, [255, 255, 255])
         display_color = ",".join([str(i) for i in display_color])
 
         data_schema = vol.Schema(
@@ -293,14 +301,27 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             step_id="zone_edit", data_schema=data_schema, errors=errors
         )
 
+    async def async_step_le_init(self, user_input=None):
+        """Enable / Disable the camera."""
+        if user_input:
+            self.options[DISABLE_LE] = user_input.get(DISABLE_LE)
+            return await self._update_config()
+
+        data_schema = vol.Schema(
+            {
+                vol.Required(DISABLE_LE, default=self.disable_le): bool,
+            }
+        )
+        return self.async_show_form(step_id="le_init", data_schema=data_schema)
+
     async def async_step_camera_init(self, user_input=None):
         """Enable / Disable the camera."""
         if user_input:
             if user_input.get(ENABLE_CAMERA):
-                self.user_input[ENABLE_CAMERA] = True
+                self.options[ENABLE_CAMERA] = True
                 return await self.async_step_camera_config()
-            self.user_input[ENABLE_CAMERA] = False
-            return await self._update_options()
+            self.options[ENABLE_CAMERA] = False
+            return await self._update_config()
 
         data_schema = vol.Schema(
             {
@@ -319,7 +340,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 pnt_valid, pnt_error = pnt_validator.is_valid()
 
                 if pnt_valid:
-                    self.user_input[GPS_TOP_LEFT] = [
+                    self.options[GPS_TOP_LEFT] = [
                         pnt_validator.point.x,
                         pnt_validator.point.y,
                     ]
@@ -331,22 +352,20 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 pnt_valid, pnt_error = pnt_validator.is_valid()
 
                 if pnt_valid:
-                    self.user_input[GPS_BOTTOM_RIGHT] = [
+                    self.options[GPS_BOTTOM_RIGHT] = [
                         pnt_validator.point.x,
                         pnt_validator.point.y,
                     ]
                 else:
                     errors[GPS_BOTTOM_RIGHT] = pnt_error
 
-            if self.user_input.get(GPS_BOTTOM_RIGHT) == self.user_input.get(
-                GPS_TOP_LEFT
-            ):
+            if self.options.get(GPS_BOTTOM_RIGHT) == self.options.get(GPS_TOP_LEFT):
                 errors[GPS_BOTTOM_RIGHT] = "points_match"
 
             if user_input.get(MOWER_IMG_PATH):
                 if os.path.isfile(user_input.get(MOWER_IMG_PATH)):
                     if validate_image(user_input.get(MOWER_IMG_PATH)):
-                        self.user_input[MOWER_IMG_PATH] = user_input.get(MOWER_IMG_PATH)
+                        self.options[MOWER_IMG_PATH] = user_input.get(MOWER_IMG_PATH)
                     else:
                         errors[MOWER_IMG_PATH] = "not_image"
                 else:
@@ -355,7 +374,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if user_input.get(MAP_IMG_PATH):
                 if os.path.isfile(user_input.get(MAP_IMG_PATH)):
                     if validate_image(user_input.get(MAP_IMG_PATH)):
-                        self.user_input[MAP_IMG_PATH] = user_input.get(MAP_IMG_PATH)
+                        self.options[MAP_IMG_PATH] = user_input.get(MAP_IMG_PATH)
                     else:
                         errors[MAP_IMG_PATH] = "not_image"
                 else:
@@ -364,7 +383,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if user_input.get(MAP_PATH_COLOR):
                 path_color = ValidateRGB(user_input.get(MAP_PATH_COLOR))
                 if path_color.is_valid():
-                    self.user_input[MAP_PATH_COLOR] = path_color.rgb_val
+                    self.options[MAP_PATH_COLOR] = path_color.rgb_val
                 else:
                     errors[MAP_PATH_COLOR] = "color_error"
 
@@ -388,7 +407,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             step_id="camera_config", data_schema=data_schema, errors=errors
         )
 
-    async def _update_options(self):
+    async def _update_config(self):
         """Update config entry options."""
-        self.user_input[CONF_ZONES] = json.dumps(self.user_input.get(CONF_ZONES, {}))
-        return self.async_create_entry(title="", data=self.user_input)
+        self.options[CONF_ZONES] = json.dumps(self.options.get(CONF_ZONES, {}))
+        return self.async_create_entry(title="", data=self.options)
