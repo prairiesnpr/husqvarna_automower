@@ -6,7 +6,7 @@ from PIL import Image, UnidentifiedImageError
 
 
 def validate_rotation(rotation: float) -> float:
-    """Ensure rotation is in degrees"""
+    """Ensure rotation is in degrees."""
     try:
         rotation = float(rotation)
         if rotation < 360 and rotation > -360:

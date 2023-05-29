@@ -193,7 +193,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         return SUPPORT_ON_OFF
 
     def _find_image_scale(self):
-        """Find the scale ration in m/px and center of image"""
+        """Find the scale ration in m/px and center of image."""
         h_w = (
             self._map_image.size[0],
             self._map_image.size[1],
@@ -315,19 +315,8 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
 
         return tuple(point)
 
-    # def _scale_to_img(self, lat_lon: GpsPoint, h_w: ImgDimensions) -> ImgPoint:
-    #     """Convert from latitude and longitude to the image pixels."""
-    #     old = (self._bottom_right_coord[0], self._top_left_coord[0])
-    #     new = (0, h_w[1])
-    #     y = ((lat_lon[0] - old[0]) * (new[1] - new[0]) / (old[1] - old[0])) + new[0]
-    #     old = (self._top_left_coord[1], self._bottom_right_coord[1])
-    #     new = (0, h_w[0])
-    #     x = ((lat_lon[1] - old[0]) * (new[1] - new[0]) / (old[1] - old[0])) + new[0]
-    #     return int(x), h_w[1] - int(y)
-
     def _scale_to_img(self, lat_lon: GpsPoint, h_w: ImgDimensions) -> ImgPoint:
         """Convert from latitude and longitude to the image pixels."""
-
         c_bearing_deg, c_bearing_deg_rev, c_plt_pnt_m = self._p_geodesic.inv(
             self._c_img_wgs84[1], self._c_img_wgs84[0], lat_lon[1], lat_lon[0]
         )

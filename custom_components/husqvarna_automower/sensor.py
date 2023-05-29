@@ -216,7 +216,7 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         value_fn=lambda data: data["battery"]["batteryPercent"],
         available_fn=lambda data: False
-        if (data["battery"]["batteryPercent"] is 0)
+        if (data["battery"]["batteryPercent"] == 0)
         and (data["metadata"]["connected"] is False)
         else True,
     ),
