@@ -121,7 +121,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         else:
             self.configured_zones = {}
 
-
         self.camera_enabled = self.config_entry.options.get(ENABLE_CAMERA, False)
         self.disable_le = self.config_entry.options.get(DISABLE_LE, True)
         self.map_top_left_coord = self.config_entry.options.get(GPS_TOP_LEFT, "")
@@ -390,7 +389,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     errors[MAP_PATH_COLOR] = "color_error"
 
             if validate_rotation(user_input.get(MAP_IMG_ROTATION, 0)):
-                self.options[MAP_IMG_ROTATION] = float(user_input.get(MAP_IMG_ROTATION, 0))
+                self.options[MAP_IMG_ROTATION] = float(
+                    user_input.get(MAP_IMG_ROTATION, 0)
+                )
             else:
                 errors[MAP_IMG_ROTATION] = "rotation_error"
 

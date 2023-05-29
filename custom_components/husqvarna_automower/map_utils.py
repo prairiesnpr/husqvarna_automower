@@ -26,6 +26,7 @@ def validate_image(img_path: str) -> bool:
         return False
     return True
 
+
 class ValidateRGB:
     """Ensure RGB input is valid."""
 
