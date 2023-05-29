@@ -41,6 +41,7 @@ GPS_TOP_LEFT = "gps_top_left"
 GPS_BOTTOM_RIGHT = "gps_bottom_right"
 MOWER_IMG_PATH = "mower_img_path"
 MAP_IMG_PATH = "map_img_path"
+MAP_IMG_ROTATION = "map_img_rotation"
 MAP_PATH_COLOR = "map_path_color"
 
 

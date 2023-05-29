@@ -23,6 +23,7 @@ from .const import (
     MAP_IMG_PATH,
     MOWER_IMG_PATH,
     MAP_PATH_COLOR,
+    MAP_IMG_ROTATION,
     CONF_ZONES,
     ZONE_COORD,
     ZONE_NAME,
@@ -35,7 +36,7 @@ from .const import (
     HOME_LOCATION,
 )
 
-from .map_utils import ValidatePointString, validate_image
+from .map_utils import ValidatePointString, validate_image, validate_rotation
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -120,8 +121,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         else:
             self.configured_zones = {}
 
-        # self.configured_zones = self.config_entry.options.get(CONF_ZONES, {})
-
         self.camera_enabled = self.config_entry.options.get(ENABLE_CAMERA, False)
         self.disable_le = self.config_entry.options.get(DISABLE_LE, True)
         self.map_top_left_coord = self.config_entry.options.get(GPS_TOP_LEFT, "")
@@ -147,6 +146,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.path_int_colors = self.config_entry.options.get(
             MAP_PATH_COLOR, [255, 0, 0]
         )
+
+        self.map_img_rotation = self.config_entry.options.get(MAP_IMG_ROTATION, 0)
 
         self.home_location = self.config_entry.options.get(HOME_LOCATION, "")
         if self.home_location != "":
@@ -387,8 +388,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 else:
                     errors[MAP_PATH_COLOR] = "color_error"
 
+            if validate_rotation(user_input.get(MAP_IMG_ROTATION, 0)):
+                self.options[MAP_IMG_ROTATION] = float(
+                    user_input.get(MAP_IMG_ROTATION, 0)
+                )
+            else:
+                errors[MAP_IMG_ROTATION] = "rotation_error"
+
             if not errors:
-                return await self._update_options()
+                return await self._update_config()
 
         path_color_str = ",".join([str(i) for i in self.path_int_colors])
 
@@ -398,6 +406,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     GPS_BOTTOM_RIGHT, default=self.map_bottom_right_coord
                 ): str,
+                vol.Required(MAP_IMG_ROTATION, default=self.map_img_rotation): str,
                 vol.Required(MOWER_IMG_PATH, default=self.mower_image_path): str,
                 vol.Required(MAP_IMG_PATH, default=self.map_img_path): str,
                 vol.Required(MAP_PATH_COLOR, default=path_color_str): str,

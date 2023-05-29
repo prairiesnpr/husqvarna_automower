@@ -5,6 +5,17 @@ from .const import LAT_LON_BOUNDS
 from PIL import Image, UnidentifiedImageError
 
 
+def validate_rotation(rotation: float) -> float:
+    """Ensure rotation is in degrees."""
+    try:
+        rotation = float(rotation)
+        if rotation < 360 and rotation > -360:
+            return True
+        return False
+    except ValueError:
+        return False
+
+
 def validate_image(img_path: str) -> bool:
     """Ensure image is valid."""
     try:
