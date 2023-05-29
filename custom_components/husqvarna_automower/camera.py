@@ -71,8 +71,6 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         self._attr_unique_id = f"{self.mower_id}_camera"
         self.home_location = self.entry.options.get(HOME_LOCATION, None)
         self._image = Image.new(mode="RGB", size=(200, 200))
-        self._image_bytes = None
-        self._image_to_bytes()
         self._map_image = None
         self._overlay_image = None
         self._path_color = self.entry.options.get(MAP_PATH_COLOR, [255, 0, 0])
@@ -126,7 +124,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         self, width: Optional[int] = None, height: Optional[int] = None
     ) -> Optional[bytes]:
         """Return the camera image."""
-        return self._image_bytes
+        return await self._image_to_bytes(width, height)
 
     def _load_map_image(self):
         """Load the map image."""
@@ -170,10 +168,16 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
                 )
                 self._map_image.paste(poly_img, mask=poly_img)
 
-    def _image_to_bytes(self):
+    async def _image_to_bytes(
+        self, width: Optional[int] = None, height: Optional[int] = None
+    ) -> Optional[bytes]:
         img_byte_arr = io.BytesIO()
-        self._image.save(img_byte_arr, format="PNG")
-        self._image_bytes = img_byte_arr.getvalue()
+        map_image = self._image.copy()
+        if width and height:
+            map_image.thumbnail((width, height), Image.Resampling.LANCZOS)
+            _LOGGER.debug("Resizing image to: (%s, %s)" % (width, height))
+        map_image.save(img_byte_arr, format="PNG")
+        return img_byte_arr.getvalue()
 
     def turn_on(self):
         """Turn the camera on."""
@@ -217,9 +221,15 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         self._px_meter = len_px / len_wgs84_m  # Scale in pixels/meter
 
         _LOGGER.debug(
-            f"Center px: {self._c_img_px}, Center WGS84 {self._c_img_wgs84}, "
-            f"Len (m): {len_wgs84_m}, Len (px): {len_px}, "
-            f"px/m: {self._px_meter}, Img HW (px): {h_w}"
+            "Center px: %s, Center WGS84: %s, Len (m): %s, Len (px): %s, px/m: %s, Img HW (px): %s"
+            % (
+                self._c_img_px,
+                self._c_img_wgs84,
+                len_wgs84_m,
+                len_px,
+                self._px_meter,
+                h_w,
+            )
         )
 
     def _generate_image(self, data: dict) -> None:
@@ -284,7 +294,6 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
             self._overlay_image, (x1 - img_w // 2, y1 - img_h), self._overlay_image
         )
         self._image = map_image
-        self._image_to_bytes()
 
     def _find_points_on_line(
         self, point_1: ImgPoint, point_2: ImgPoint
