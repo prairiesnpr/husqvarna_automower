@@ -7,7 +7,6 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, ERRORCODES
@@ -36,9 +35,8 @@ async def async_setup_entry(
 
 
 class AutomowerBatteryChargingBinarySensor(BinarySensorEntity, AutomowerEntity):
-    """Defining the AutomowerProblemSensor Entity."""
+    """Defining the AutomowerBatteryChargingBinarySensor Entity."""
 
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
     _attr_device_class = BinarySensorDeviceClass.BATTERY_CHARGING
     _attr_name = "Battery charging"
@@ -61,11 +59,10 @@ class AutomowerBatteryChargingBinarySensor(BinarySensorEntity, AutomowerEntity):
 class AutomowerLeavingDockBinarySensor(BinarySensorEntity, AutomowerEntity):
     """Defining the AutomowerProblemSensor Entity."""
 
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
     _attr_name = "Leaving dock"
 
-    def __init__(self, session, idx):
+    def __init__(self, session, idx) -> None:
         """Initialize AutomowerLeavingDockBinarySensor."""
         super().__init__(session, idx)
         self._attr_unique_id = f"{self.mower_id}_leaving_dock"
@@ -83,7 +80,6 @@ class AutomowerLeavingDockBinarySensor(BinarySensorEntity, AutomowerEntity):
 class AutomowerErrorBinarySensor(BinarySensorEntity, AutomowerEntity):
     """Defining the AutomowerErrorSensor Entity."""
 
-    _attr_entity_category: EntityCategory = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default: bool = False
     _attr_device_class: BinarySensorDeviceClass = BinarySensorDeviceClass.PROBLEM
     _attr_name = "Error"

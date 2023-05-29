@@ -4,8 +4,10 @@ import io
 import logging
 import math
 import json
+import pyproj
 from typing import Optional
 from datetime import datetime
+from geopy.distance import distance, geodesic
 
 from PIL import Image, ImageDraw
 import numpy as np
@@ -21,6 +23,7 @@ from .const import (
     GPS_BOTTOM_RIGHT,
     GPS_TOP_LEFT,
     MAP_IMG_PATH,
+    MAP_IMG_ROTATION,
     MOWER_IMG_PATH,
     MAP_PATH_COLOR,
     HOME_LOCATION,
@@ -76,13 +79,19 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         self._last_update = None
         self._update_frequency = 0
         self._avg_update_frequency = 0
+        self._p_geodesic = pyproj.Geod(ellps='WGS84') # Create a WGS84 Geodesic
+        self._px_meter  = 1
+        self._c_img_wgs84 = (0,0)
+        self._c_img_px = (0,0)
 
         self.session = session
 
         if self.entry.options.get(ENABLE_CAMERA, False):
-            self.top_left_coord = self.entry.options.get(GPS_TOP_LEFT)
-            self.bottom_right_coord = self.entry.options.get(GPS_BOTTOM_RIGHT)
+            self._top_left_coord = self.entry.options.get(GPS_TOP_LEFT)
+            self._bottom_right_coord = self.entry.options.get(GPS_BOTTOM_RIGHT)
+            self._map_rotation = self.entry.options.get(MAP_IMG_ROTATION, 0)
             self._load_map_image()
+            self._find_image_scale()
             self._load_mower_image()
             self._overlay_zones()
             self.coordinator.session.register_data_callback(
@@ -105,8 +114,10 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
             bottom_right_lon = lon + (offset / r_earth) * (180 / pi) / math.cos(
                 lat * pi / 180
             )
-            self.top_left_coord = (top_left_lat, top_left_lon)
-            self.bottom_right_coord = (bottom_right_lat, bottom_right_lon)
+            self._top_left_coord = (top_left_lat, top_left_lon)
+            self._bottom_right_coord = (bottom_right_lat, bottom_right_lon)
+            self._map_rotation = 0
+
 
     def model(self) -> str:
         """Return the mower model."""
@@ -167,19 +178,43 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
 
     def turn_on(self):
         """Turn the camera on."""
-        self.session.register_data_callback(
+        self.coordinator.session.register_data_callback(
             lambda data: self._generate_image(data), schedule_immediately=True
         )
 
     def turn_off(self):
         """Turn the camera off."""
-        pass
-        # self.session.unregister_data_callback(lambda data: self._generate_image(data))
+        self.coordinator.session.unregister_data_callback(
+            lambda data: self._generate_image(data)
+        )
 
     @property
     def supported_features(self) -> int:
         """Show supported features."""
         return SUPPORT_ON_OFF
+
+    def _find_image_scale(self):
+        """Find the scale ration in m/px and center of image"""
+        h_w = (self._map_image.size[0], self._map_image.size[1]) # Height/Width of image
+        self._c_img_px = int((0 + h_w[0]) / 2), int((0 + h_w[1]) / 2) # Center of image in pixels
+
+        # Center of image in lat/long
+        self._c_img_wgs84 = ((self._top_left_coord[0] + self._bottom_right_coord[0]) / 2,
+                       (self._top_left_coord[1] + self._bottom_right_coord[1]) / 2)
+
+        # Length of hypotenuse in meters
+        len_wgs84_m = geodesic(self._top_left_coord, self._bottom_right_coord).meters
+
+        # Length of hypotenuse in pixels
+        len_px = int(math.dist((0, 0),  h_w))
+
+        self._px_meter = len_px / len_wgs84_m # Scale in pixels/meter
+
+        _LOGGER.debug(
+            f"Center px: {self._c_img_px}, Center WGS84 {self._c_img_wgs84}, "
+            f"Len (m): {len_wgs84_m}, Len (px): {len_px}, "
+            f"px/m: {self._px_meter}, Img HW (px): {h_w}"
+        )
 
     def _generate_image(self, data: dict) -> None:
         """Generate the image."""
@@ -274,12 +309,29 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
 
         return tuple(point)
 
+    # def _scale_to_img(self, lat_lon: GpsPoint, h_w: ImgDimensions) -> ImgPoint:
+    #     """Convert from latitude and longitude to the image pixels."""
+    #     old = (self._bottom_right_coord[0], self._top_left_coord[0])
+    #     new = (0, h_w[1])
+    #     y = ((lat_lon[0] - old[0]) * (new[1] - new[0]) / (old[1] - old[0])) + new[0]
+    #     old = (self._top_left_coord[1], self._bottom_right_coord[1])
+    #     new = (0, h_w[0])
+    #     x = ((lat_lon[1] - old[0]) * (new[1] - new[0]) / (old[1] - old[0])) + new[0]
+    #     return int(x), h_w[1] - int(y)
+
     def _scale_to_img(self, lat_lon: GpsPoint, h_w: ImgDimensions) -> ImgPoint:
         """Convert from latitude and longitude to the image pixels."""
-        old = (self.bottom_right_coord[0], self.top_left_coord[0])
-        new = (0, h_w[1])
-        y = ((lat_lon[0] - old[0]) * (new[1] - new[0]) / (old[1] - old[0])) + new[0]
-        old = (self.top_left_coord[1], self.bottom_right_coord[1])
-        new = (0, h_w[0])
-        x = ((lat_lon[1] - old[0]) * (new[1] - new[0]) / (old[1] - old[0])) + new[0]
-        return int(x), h_w[1] - int(y)
+
+        c_bearing_deg, c_bearing_deg_rev, c_plt_pnt_m = self._p_geodesic.inv(self._c_img_wgs84[1], self._c_img_wgs84[0], lat_lon[1], lat_lon[0])
+
+        c_bearing = math.radians(c_bearing_deg - 90 + self._map_rotation) # Why do I need the - 90 degrees?
+
+        new_pnt_px = (
+            self._c_img_px[0] + (c_plt_pnt_m * self._px_meter * math.cos(c_bearing)),
+            self._c_img_px[1] + (c_plt_pnt_m * self._px_meter * math.sin(c_bearing))
+        )
+
+
+        return int(new_pnt_px[0]), int(new_pnt_px[1])
+
+

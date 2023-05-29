@@ -347,7 +347,6 @@ class AutomowerZoneSensor(SensorEntity, AutomowerEntity):
         """Return the specific state attributes of this mower."""
         return {ZONE_ID: self.zone_id}
 
-
 class AutomowerSensor(SensorEntity, AutomowerEntity):
     """Defining the Automower Sensors with AutomowerSensorEntityDescription."""
 
