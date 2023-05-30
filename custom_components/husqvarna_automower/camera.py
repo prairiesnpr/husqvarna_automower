@@ -4,7 +4,6 @@ import io
 import logging
 import math
 import json
-import pyproj
 from typing import Optional
 from datetime import datetime
 from geopy.distance import distance, geodesic
@@ -77,7 +76,6 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
         self._last_update = None
         self._update_frequency = 0
         self._avg_update_frequency = 0
-        self._p_geodesic = pyproj.Geod(ellps="WGS84")  # Create a WGS84 Geodesic
         self._px_meter = 1
         self._c_img_wgs84 = (0, 0)
         self._c_img_px = (0, 0)
@@ -326,9 +324,11 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
 
     def _scale_to_img(self, lat_lon: GpsPoint, h_w: ImgDimensions) -> ImgPoint:
         """Convert from latitude and longitude to the image pixels."""
-        c_bearing_deg, c_bearing_deg_rev, c_plt_pnt_m = self._p_geodesic.inv(
-            self._c_img_wgs84[1], self._c_img_wgs84[0], lat_lon[1], lat_lon[0]
+        bearing_res = distance(self._c_img_wgs84, lat_lon).geod.Inverse(
+            self._c_img_wgs84[0], self._c_img_wgs84[1], lat_lon[0], lat_lon[1]
         )
+        c_bearing_deg = bearing_res.get("azi1")
+        c_plt_pnt_m = bearing_res.get("s12") * 1000
 
         c_bearing = math.radians(
             c_bearing_deg - 90 + self._map_rotation

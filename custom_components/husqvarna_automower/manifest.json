@@ -20,8 +20,7 @@
     "geopy>=2.1.0",
     "numpy>=1.21.6",
     "Pillow>=9.1.1",
-    "Shapely>=1.8.2",
-    "pyproj==3.5.0"
+    "Shapely>=1.8.2"
   ],
   "version": "0.0.0"
 }
