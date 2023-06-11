@@ -15,8 +15,8 @@
 #
 # See here for more info: https://docs.pytest.org/en/latest/fixture.html (note that
 # pytest includes fixtures OOB which you can use as defined on this page)
-from unittest.mock import patch
-
+from unittest.mock import patch, MagicMock
+from homeassistant.components.http.web_runner import HomeAssistantTCPSite
 import pytest
 
 pytest_plugins = "pytest_homeassistant_custom_component"  # pylint: disable=invalid-name

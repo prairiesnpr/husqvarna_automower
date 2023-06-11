@@ -26,6 +26,7 @@ from homeassistant.helpers.storage import Store
 
 from .const import (
     DOMAIN,
+    ERROR_ACTIVITIES,
     ERROR_STATES,
     ERRORCODES,
     MWR_ACTIVITY_TO_STATUS,
@@ -101,23 +102,23 @@ class HusqvarnaAutomowerStateMixin(object):
     def state(self) -> str:
         """Return the state of the mower."""
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
-        if mower_attributes["mower"]["state"] in ["PAUSED"]:
+        if mower_attributes.state in ["PAUSED"]:
             return STATE_PAUSED
-        if mower_attributes["mower"]["state"] in [
+        if mower_attributes.state in [
             "WAIT_UPDATING",
             "WAIT_POWER_UP",
         ]:
             return STATE_IDLE
-        if mower_attributes["mower"]["activity"] in ["MOWING", "LEAVING"]:
+        if mower_attributes.activity in ["MOWING", "LEAVING"]:
             return STATE_CLEANING
-        if mower_attributes["mower"]["activity"] == "GOING_HOME":
+        if mower_attributes.activity == "GOING_HOME":
             return STATE_RETURNING
-        if (mower_attributes["mower"]["state"] == "RESTRICTED") or (
-            mower_attributes["mower"]["activity"] in ["PARKED_IN_CS", "CHARGING"]
+        if (mower_attributes.state == "RESTRICTED") or (
+            mower_attributes.activity in ["PARKED_IN_CS", "CHARGING"]
         ):
             return STATE_DOCKED
         if (
-            mower_attributes["mower"]["state"]
+            mower_attributes.state
             in [
                 "FATAL_ERROR",
                 "ERROR",
@@ -127,11 +128,7 @@ class HusqvarnaAutomowerStateMixin(object):
                 "STOPPED",
                 "OFF",
             ]
-        ) or mower_attributes["mower"]["activity"] in [
-            "STOPPED_IN_GARDEN",
-            "UNKNOWN",
-            "NOT_APPLICABLE",
-        ]:
+        ) or mower_attributes.activity in ERROR_ACTIVITIES:
             return STATE_ERROR
 
     @property
@@ -139,7 +136,7 @@ class HusqvarnaAutomowerStateMixin(object):
         """Define an error message if the vacuum is in STATE_ERROR."""
         if self.state == STATE_ERROR:
             mower_attributes = AutomowerEntity.get_mower_attributes(self)
-            return ERRORCODES.get(mower_attributes["mower"]["errorCode"])
+            return ERRORCODES.get(mower_attributes.error_code)
         return None
 
 
@@ -161,7 +158,7 @@ class HusqvarnaAutomowerEntity(
     @property
     def available(self) -> bool:
         """Return True if the device is available."""
-        available = self.get_mower_attributes()["metadata"]["connected"]
+        available = self.get_mower_attributes().connected
         return available
 
     @property
@@ -171,37 +168,37 @@ class HusqvarnaAutomowerEntity(
             0,
             min(
                 100,
-                AutomowerEntity.get_mower_attributes(self)["battery"]["batteryPercent"],
+                AutomowerEntity.get_mower_attributes(self).battery_percent
             ),
         )
 
     def __get_status(self) -> str:
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
         next_start_short = ""
-        if mower_attributes["planner"]["nextStartTimestamp"] != 0:
+        if mower_attributes.planner_next_start != 0:
             next_start_dt_obj = AutomowerEntity.datetime_object(
-                self, mower_attributes["planner"]["nextStartTimestamp"]
+                self, mower_attributes.planner_next_start
             )
             next_start_short = next_start_dt_obj.strftime(", next start: %a %H:%M")
-        if mower_attributes["mower"]["state"] in MWR_STATE_TO_STATUS:
-            return MWR_STATE_TO_STATUS.get(mower_attributes["mower"]["state"])
-        if mower_attributes["mower"]["state"] == "IN_OPERATION":
-            if mower_attributes["mower"]["activity"] in MWR_ACTIVITY_TO_STATUS:
-                return MWR_ACTIVITY_TO_STATUS.get(mower_attributes["mower"]["activity"])
-            if mower_attributes["mower"]["activity"] == "CHARGING":
+        if mower_attributes.state in MWR_STATE_TO_STATUS:
+            return MWR_STATE_TO_STATUS.get(mower_attributes.state)
+        if mower_attributes.state == "IN_OPERATION":
+            if mower_attributes.activity in MWR_ACTIVITY_TO_STATUS:
+                return MWR_ACTIVITY_TO_STATUS.get(mower_attributes.activity)
+            if mower_attributes.activity == "CHARGING":
                 return f"Charging{next_start_short}"
-        if mower_attributes["mower"]["state"] == "RESTRICTED":
+        if mower_attributes.state == "RESTRICTED":
             if (
-                mower_attributes["planner"]["restrictedReason"]
+                mower_attributes.restricted_reason
                 in MWR_RES_REASON_TO_STATUS
             ):
                 return MWR_RES_REASON_TO_STATUS.get(
-                    mower_attributes["planner"]["restrictedReason"]
+                    mower_attributes.restricted_reason
                 )
-            if mower_attributes["planner"]["restrictedReason"] == "WEEK_SCHEDULE":
+            if mower_attributes.restricted_reason == "WEEK_SCHEDULE":
                 return f"Schedule{next_start_short}"
-        if mower_attributes["mower"]["state"] in ERROR_STATES:
-            return ERRORCODES.get(mower_attributes["mower"]["errorCode"])
+        if mower_attributes.state in ERROR_STATES:
+            return ERRORCODES.get(mower_attributes.error_code)
         return None
 
     @property
@@ -210,7 +207,7 @@ class HusqvarnaAutomowerEntity(
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
         return {
             ATTR_STATUS: self.__get_status(),
-            "action": mower_attributes["planner"]["override"]["action"],
+            "action": mower_attributes.planner_override_action,
         }
 
     async def async_start(self) -> None:

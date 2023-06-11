@@ -74,14 +74,13 @@ class AutomowerNumber(NumberEntity, AutomowerEntity):
     @property
     def available(self) -> bool:
         """Return True if the device is available."""
-        available = self.get_mower_attributes()["metadata"]["connected"]
-        return available
+        return self.get_mower_attributes().connected
 
     @property
     def native_value(self) -> int:
         """Return the entity value."""
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
-        return mower_attributes["cuttingHeight"]
+        return mower_attributes.cutting_height
 
     async def async_set_native_value(self, value: float) -> None:
         """Change the value."""
@@ -118,7 +117,7 @@ class AutomowerParkStartNumberEntity(NumberEntity, AutomowerEntity):
     @property
     def available(self) -> bool:
         """Return True if the device is available."""
-        available = self.get_mower_attributes()["metadata"]["connected"]
+        available = self.get_mower_attributes().connected
         return available
 
     async def async_set_native_value(self, value: float) -> None:

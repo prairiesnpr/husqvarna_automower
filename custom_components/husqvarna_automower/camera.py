@@ -106,8 +106,8 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
             r_earth = 6378000  # meters
             offset = 100  # meters
             pi = 3.14
-            lat = AutomowerEntity.get_mower_attributes(self)["positions"][0]["latitude"]
-            lon = AutomowerEntity.get_mower_attributes(self)["positions"][0][
+            lat = AutomowerEntity.get_mower_attributes(self).positions[0]["latitude"]
+            lon = AutomowerEntity.get_mower_attributes(self).positions[0][
                 "longitude"
             ]
             top_left_lat = lat - (offset / r_earth) * (180 / pi)
@@ -323,7 +323,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
                 options = self.entry.options.get(add_cam, {})
                 home_location = options.get(HOME_LOCATION, None)
                 path_color = options.get(MAP_PATH_COLOR, [255, 0, 0])
-                cam_position_history = extra_cam.get_mower_attributes()["positions"]
+                cam_position_history = extra_cam.get_mower_attributes().positions
                 map_image = self._generate_image_cam(
                     extra_cam._is_home,
                     home_location,
@@ -333,7 +333,7 @@ class AutomowerCamera(HusqvarnaAutomowerStateMixin, Camera, AutomowerEntity):
                     map_image,
                 )
 
-        position_history = AutomowerEntity.get_mower_attributes(self)["positions"]
+        position_history = AutomowerEntity.get_mower_attributes(self).positions
 
         map_image = self._generate_image_cam(
             self._is_home,

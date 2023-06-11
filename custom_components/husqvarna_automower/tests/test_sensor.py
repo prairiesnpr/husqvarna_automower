@@ -9,7 +9,8 @@ from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from ..const import DOMAIN, NO_SUPPORT_FOR_CHANGING_CUTTING_HEIGHT, ZONE_ID
-from ..sensor import AutomowerZoneSensor, get_problem
+from ..sensor import AutomowerZoneSensor, get_problem, SENSOR_TYPES
+from ..entity import AutomowerStateHelper
 from .const import (
     AUTOMER_DM_CONFIG,
     AUTOMOWER_CONFIG_DATA,
@@ -141,9 +142,19 @@ async def test_sensors_no_cut(hass: HomeAssistant):
 
 
 @pytest.mark.asyncio
+async def test_statistics_sensors(hass: HomeAssistant):
+    """test statistics sensors."""
+    TEST_SENSOR_TYPES = deepcopy(SENSOR_TYPES)
+    for s in TEST_SENSOR_TYPES:
+        s.entity_registry_enabled_default = True
+    with patch("custom_components.husqvarna_automower.sensor.SENSOR_TYPES", TEST_SENSOR_TYPES):
+        config_entry = await setup_zone_sensor(hass)
+
+
+@pytest.mark.asyncio
 async def test_get_problem(hass: HomeAssistant):
     """Test get_problem function."""
-    mower_attributes = {
+    mower_test_attributes = {
         "mower": {
             "mode": "MAIN_AREA",
             "activity": "PARKED_IN_CS",
@@ -158,24 +169,25 @@ async def test_get_problem(hass: HomeAssistant):
         },
     }
 
-    assert get_problem(mower_attributes) == "parked_until_further_notice"
 
-    mower_attributes["planner"]["restrictedReason"] = "WEEK_SCHEDULE"
-    assert get_problem(mower_attributes) == "WEEK_SCHEDULE"
+    assert get_problem(AutomowerStateHelper(mower_test_attributes)) == "parked_until_further_notice"
+
+    mower_test_attributes["planner"]["restrictedReason"] = "WEEK_SCHEDULE"
+    assert get_problem(AutomowerStateHelper(mower_test_attributes)) == "WEEK_SCHEDULE"
 
     # Error State
-    mower_attributes["mower"]["state"] = "ERROR"
-    assert get_problem(mower_attributes) == "Unexpected error"
+    mower_test_attributes["mower"]["state"] = "ERROR"
+    assert get_problem(AutomowerStateHelper(mower_test_attributes)) == "Unexpected error"
 
     # Unkown State
-    mower_attributes["mower"]["state"] = "UNKNOWN"
-    assert get_problem(mower_attributes) == "UNKNOWN"
+    mower_test_attributes["mower"]["state"] = "UNKNOWN"
+    assert get_problem(AutomowerStateHelper(mower_test_attributes)) == "UNKNOWN"
 
     # Stopped in Garden State
-    mower_attributes["mower"]["state"] = "OTHER"
-    mower_attributes["mower"]["activity"] = "STOPPED_IN_GARDEN"
-    assert get_problem(mower_attributes) == "STOPPED_IN_GARDEN"
+    mower_test_attributes["mower"]["state"] = "OTHER"
+    mower_test_attributes["mower"]["activity"] = "STOPPED_IN_GARDEN"
+    assert get_problem(AutomowerStateHelper(mower_test_attributes)) == "STOPPED_IN_GARDEN"
 
     # None
-    mower_attributes["mower"]["activity"] = "MISSING"
-    assert get_problem(mower_attributes) == None
+    mower_test_attributes["mower"]["activity"] = "MISSING"
+    assert get_problem(AutomowerStateHelper(mower_test_attributes)) == None

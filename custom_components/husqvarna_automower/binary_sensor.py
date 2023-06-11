@@ -50,7 +50,7 @@ class AutomowerBatteryChargingBinarySensor(BinarySensorEntity, AutomowerEntity):
     def is_on(self) -> bool:
         """Return if the mower is charging."""
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
-        if mower_attributes["mower"]["activity"] == "CHARGING":
+        if mower_attributes.activity == "CHARGING":
             return True
         return False
 
@@ -70,7 +70,7 @@ class AutomowerLeavingDockBinarySensor(BinarySensorEntity, AutomowerEntity):
     def is_on(self) -> bool:
         """Return if the mower is leaving the dock."""
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
-        if mower_attributes["mower"]["activity"] == "LEAVING":
+        if mower_attributes.activity == "LEAVING":
             return True
         return False
 
@@ -91,7 +91,7 @@ class AutomowerErrorBinarySensor(BinarySensorEntity, AutomowerEntity):
     def is_on(self) -> bool:
         """Return if the mower is in an error status."""
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
-        if mower_attributes["mower"]["state"] in ERROR_STATES:
+        if mower_attributes.state in ERROR_STATES:
             return True
         return False
 
@@ -101,8 +101,8 @@ class AutomowerErrorBinarySensor(BinarySensorEntity, AutomowerEntity):
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
         if self.is_on:
             return {
-                "error_code": int(mower_attributes["mower"]["errorCode"]),
-                "description": ERRORCODES.get(mower_attributes["mower"]["errorCode"]),
+                "error_code": int(mower_attributes.error_code),
+                "description": ERRORCODES.get(mower_attributes.error_code),
             }
 
         return {"error_code": -1, "description": "No Error"}

@@ -46,14 +46,13 @@ class AutomowerSelect(SelectEntity, AutomowerEntity):
     @property
     def available(self) -> bool:
         """Return True if the device is available."""
-        available = self.get_mower_attributes()["metadata"]["connected"]
+        available = self.get_mower_attributes().connected
         return available
 
     @property
     def current_option(self) -> str:
         """Return a the current option for the entity."""
-        mower_attributes = AutomowerEntity.get_mower_attributes(self)
-        return mower_attributes["headlight"]["mode"]
+        return AutomowerEntity.get_mower_attributes(self).headlight_mode
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""

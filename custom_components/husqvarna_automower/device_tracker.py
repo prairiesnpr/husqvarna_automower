@@ -46,11 +46,11 @@ class AutomowerTracker(TrackerEntity, AutomowerEntity):
     @property
     def latitude(self) -> float:
         """Return latitude value of the device."""
-        lat = AutomowerEntity.get_mower_attributes(self)["positions"][0]["latitude"]
+        lat = AutomowerEntity.get_mower_attributes(self).positions[0]["latitude"]
         return lat
 
     @property
     def longitude(self) -> float:
         """Return longitude value of the device."""
-        lon = AutomowerEntity.get_mower_attributes(self)["positions"][0]["longitude"]
+        lon = AutomowerEntity.get_mower_attributes(self).positions[0]["longitude"]
         return lon

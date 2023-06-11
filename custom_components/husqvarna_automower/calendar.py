@@ -57,8 +57,7 @@ class AutomowerCalendar(CalendarEntity, AutomowerEntity):
     @property
     def available(self) -> bool:
         """Return True if the device is available."""
-        available = self.get_mower_attributes()["metadata"]["connected"]
-        return available
+        return self.get_mower_attributes().connected
 
     async def async_get_events_data(
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
@@ -66,8 +65,8 @@ class AutomowerCalendar(CalendarEntity, AutomowerEntity):
         """Get all events in a specific time frame."""
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
         try:
-            lat = mower_attributes["positions"][0]["latitude"]
-            long = mower_attributes["positions"][0]["longitude"]
+            lat = mower_attributes.positions[0]["latitude"]
+            long = mower_attributes.positions[0]["longitude"]
             position = f"{lat}, {long}"
             result = await hass.async_add_executor_job(
                 self.geolocator.reverse, position
@@ -79,8 +78,8 @@ class AutomowerCalendar(CalendarEntity, AutomowerEntity):
         except IndexError:
             self.loc = None
 
-        even_list, next_event = self.get_next_event()
-        return even_list
+        event_list, next_event = self.get_next_event()
+        return event_list
 
     def get_next_event(self) -> tuple[list[CalendarEvent], CalendarEvent]:
         """Get the current or next event."""
@@ -92,8 +91,8 @@ class AutomowerCalendar(CalendarEntity, AutomowerEntity):
             location="",
         )
         event_list = []
-        for task, tasks in enumerate(mower_attributes["calendar"]["tasks"]):
-            calendar = mower_attributes["calendar"]["tasks"][task]
+        for task, tasks in enumerate(mower_attributes.calendar_tasks):
+            calendar = mower_attributes.calendar_tasks[task]
             start_of_day = dt_util.start_of_local_day()
             start_mowing = start_of_day + dt_util.dt.timedelta(
                 minutes=calendar["start"]
@@ -148,7 +147,7 @@ class AutomowerCalendar(CalendarEntity, AutomowerEntity):
     async def async_create_event(self, **kwargs) -> None:
         """Add a new event to calendar."""
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
-        current_event_list = mower_attributes["calendar"]["tasks"]
+        current_event_list = mower_attributes.calendar_tasks
         task_list = await self.async_parse_to_husqvarna_string(kwargs)
         await self.aysnc_send_command_to_mower(current_event_list + task_list)
 
@@ -161,7 +160,7 @@ class AutomowerCalendar(CalendarEntity, AutomowerEntity):
     ) -> None:
         """Update an existing event on the calendar."""
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
-        current_event_list = mower_attributes["calendar"]["tasks"]
+        current_event_list = mower_attributes.calendar_tasks
         task_list = await self.async_parse_to_husqvarna_string(event)
         current_event_list[int(uid)] = task_list[0]
         await self.aysnc_send_command_to_mower(current_event_list)
@@ -175,7 +174,7 @@ class AutomowerCalendar(CalendarEntity, AutomowerEntity):
     ) -> None:
         """Delete an event on the calendar."""
         mower_attributes = AutomowerEntity.get_mower_attributes(self)
-        current_event_list = mower_attributes["calendar"]["tasks"]
+        current_event_list = mower_attributes.calendar_tasks
         amount_of_tasks = len(current_event_list)
         if amount_of_tasks < 2:
             raise vol.Invalid("You need at least one schedule")
